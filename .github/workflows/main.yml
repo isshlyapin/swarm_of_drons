@@ -1,0 +1,16 @@
+name: Pull request main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    uses: .github/workflows/test.yml
+
+  format:
+    needs: test
+    uses: .github/workflows/format.yml
+
+  

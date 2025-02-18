@@ -1,0 +1,11 @@
+name: Base workflow
+
+on:
+  push:
+    branches:
+      - shlyapin
+      - utkin
+
+jobs:
+  test:
+    uses: .github/workflows/test.yml
