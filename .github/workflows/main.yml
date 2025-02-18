@@ -7,10 +7,8 @@ on:
 
 jobs:
   test:
-    uses: .github/workflows/test.yml
+    uses: ./.github/workflows/test.yml
 
   format:
     needs: test
-    uses: .github/workflows/format.yml
-
-  
+    uses: ./.github/workflows/format.yml
