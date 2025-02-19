@@ -1,3 +1,6 @@
+CompileFlags:
+  Add: [-std=c++17]
+
 Diagnostics:
   ClangTidy:
     Add:
@@ -17,6 +20,6 @@ Diagnostics:
   UnusedIncludes: Strict
 
 InlayHints:
-  Enabled: Yes
+  Enabled: false
   ParameterNames: No
-  Designators: No
+  Designators: false
