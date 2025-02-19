@@ -1,0 +1,22 @@
+Diagnostics:
+  ClangTidy:
+    Add:
+      - 'modernize-*'
+      - 'cppcoreguidelines-*'
+      - 'clang-analyzer-*'
+      - 'clang-diagnostic-*'
+      - 'readability-*'
+      - 'performance-*'
+      - 'bugprone-*'
+      - 'hicpp-*'
+      - 'misc-*'
+      - 'google-*'
+    Remove:
+      - 'modernize-use-trailing-return-type'
+    FastCheckFilter: None
+  UnusedIncludes: Strict
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: No
+  Designators: No
