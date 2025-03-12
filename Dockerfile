@@ -23,11 +23,8 @@ RUN apt install ros-jazzy-desktop -y
 
 RUN apt install ros-jazzy-ros-gz -y
 
-RUN apt install -y git-all eza zoxide cmake gcc g++
+RUN apt install -y git-all cmake gcc g++
 
 RUN apt install -y libllvm-19-ocaml-dev libllvm19 llvm-19 llvm-19-dev llvm-19-doc llvm-19-examples llvm-19-runtime; \
     apt install -y clang-19 clang-tools-19 clang-19-doc libclang-common-19-dev libclang-19-dev libclang1-19 clang-format-19 python3-clang-19 clangd-19 clang-tidy-19
-
-RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf; \
-    ~/.fzf/install --bin
 
