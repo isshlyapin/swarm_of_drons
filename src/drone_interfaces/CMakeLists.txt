@@ -13,6 +13,7 @@ find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Mission.msg"
+  "msg/GlobalMission.msg"
   DEPENDENCIES geometry_msgs builtin_interfaces
 )
 
