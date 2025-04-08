@@ -1,21 +1,22 @@
-#include "rclcpp/rclcpp.hpp"
-#include "rosgraph_msgs/msg/clock.hpp"
-#include "std_srvs/srv/set_bool.hpp"
+#include "rclcpp/node.hpp"
+#include "rclcpp/executors.hpp"
 #include "std_srvs/srv/trigger.hpp"
+#include "std_srvs/srv/set_bool.hpp"
+#include "rosgraph_msgs/msg/clock.hpp"
 
 class SimClockPublisher : public rclcpp::Node
 {
 public:
-  SimClockPublisher() : Node("sim_clock_publisher"), sim_time_(0, 0)
+  SimClockPublisher() : Node("sim_clock"), sim_time_(0, 0)
   {
     // Объявляем параметры
     this->declare_parameter("time_scale", 1.0);   // Масштаб времени (1.0 = реальное время)
     this->declare_parameter("publish_rate", 100); // Частота публикации в Гц
     this->declare_parameter("start_paused", false); // Начать на паузе
     
-    time_scale_ = this->get_parameter("time_scale").as_double();
+    paused_          = this->get_parameter("start_paused").as_bool();
+    time_scale_      = this->get_parameter("time_scale").as_double();
     int publish_rate = this->get_parameter("publish_rate").as_int();
-    paused_ = this->get_parameter("start_paused").as_bool();
     
     // Создаем издателя для топика /clock
     clock_publisher_ = this->create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
