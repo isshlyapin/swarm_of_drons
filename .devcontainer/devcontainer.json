@@ -23,7 +23,8 @@
                 "BracketPairColorDLW.bracket-pair-color-dlw"
             ],
             "settings": {
-                "clangd.path": "/usr/bin/clangd-19"
+                "clangd.path": "/usr/bin/clangd-19",
+                "clang-format.executable": "/usr/bin/clang-format-19"
             }
         }
     },
