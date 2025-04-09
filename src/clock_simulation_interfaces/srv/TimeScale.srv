@@ -1,0 +1,4 @@
+float64 scale
+---
+bool success
+string message
