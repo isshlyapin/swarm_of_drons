@@ -4,6 +4,7 @@
 #include <string>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rate.hpp>
+#include <rclcpp/logging.hpp>
 #include <rclcpp/duration.hpp>
 
 #include "rclcpp/node.hpp"
@@ -60,10 +61,11 @@ private:
     using MsgLocationPtrT = MsgLocationT::SharedPtr;
 
 public:
-    Drone(const std::string &nodeName, int id, Point pos, rclcpp::QoS& qos)
-    : Node(nodeName), id(id), nodeName(nodeName), currentPosition(pos) {
+    Drone(const std::string &nodeName, int id, Point pos, int qos)
+    : Node(nodeName + "_" + std::to_string(id)), id(id), nodeName(nodeName + "_" + std::to_string(id)), currentPosition(pos) {
         RCLCPP_INFO(get_logger(), "Drone %s_%d: Created", nodeName.c_str(), id);
 
+        set_parameter(rclcpp::Parameter("use_sim_time", true));
         RCLCPP_INFO(get_logger(), "Drone %s_%d: Mission Subscription Init", nodeName.c_str(), id);
         missionSubscription = create_subscription<MsgMissionT>(
             getMissionTopic(), 
@@ -84,19 +86,19 @@ public:
         );
     }
 
-private:
     std::string getMissionTopic() {
-        return nodeName + "_" + std::to_string(id) + "/mission";
+        return nodeName + "/mission";
     }
-
+    
     std::string getReportTopic() {
-        return nodeName + "_" + std::to_string(id) + "/report";
+        return nodeName + "/report";
     }
-
+    
     std::string getLocationTopic() {
-        return nodeName + "_" + std::to_string(id) + "/location";
+        return nodeName + "/location";
     }
-
+    
+private:
     void flight(Point targetPoint, Vector3 velocity) {
         Point newPos = currentPosition;
         double newDistance = Vector3(currentPosition, targetPoint).length();
@@ -106,6 +108,8 @@ private:
 
         rclcpp::Rate rate(DRONE_FLIGHT_RATE, this->get_clock());
         do {
+            rate.sleep();
+
             geometry_msgs::msg::Pose pose;
             pose.position.x = currentPosition.x;
             pose.position.y = currentPosition.y;
@@ -113,19 +117,24 @@ private:
 
             locationPublisher->publish(pose);
 
+            RCLCPP_INFO(get_logger(), "Drone %s_%d: Current position: [%.2f, %.2f, %.2f]", nodeName.c_str(), id, currentPosition.x, currentPosition.y, currentPosition.z);
+
             rclcpp::Time tmpTime = this->now();
             rclcpp::Duration dTime = tmpTime - time;
+            if (dTime == rclcpp::Duration(0, 0)) {
+                continue;
+            }
             time = tmpTime;
        
             currentPosition = newPos;
-            curDistance = newDistance; 
-            newPos.x += velocity.x * (dTime.seconds() + 10e-9 * dTime.nanoseconds());
-            newPos.y += velocity.y * (dTime.seconds() + 10e-9 * dTime.nanoseconds());
-            newPos.z += velocity.z * (dTime.seconds() + 10e-9 * dTime.nanoseconds());
-
+            curDistance = newDistance;            
+            newPos.x += velocity.x * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
+            newPos.y += velocity.y * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
+            newPos.z += velocity.z * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
+            
             newDistance = Vector3(newPos, targetPoint).length();
 
-            rate.sleep();
+            RCLCPP_INFO(get_logger(), "Drone %s_%d: Current distance: %.2f", nodeName.c_str(), id, curDistance);
         } while(newDistance < curDistance);
     }
 
@@ -138,7 +147,15 @@ private:
                 msg->poses[i].position.y,
                 msg->poses[i].position.z
             };
+            RCLCPP_INFO(get_logger(), "Drone %s: Target point %ld: [%.2f, %.2f, %.2f]", nodeName.c_str(), i, targetPoint.x, targetPoint.y, targetPoint.z);
+
+            if (Vector3{currentPosition, targetPoint}.length() < 1) {
+                RCLCPP_INFO(get_logger(), "Drone %s: Target point %ld is too close", nodeName.c_str(), i);
+                continue;
+            }
+
             Vector3 velocity = Vector3{currentPosition, targetPoint}.normalize() * msg->velocities[i];
+            RCLCPP_INFO(get_logger(), "Drone %s: Velocity: [%.2f, %.2f, %.2f]", nodeName.c_str(), velocity.x, velocity.y, velocity.z);
 
             flight(targetPoint, velocity);
         }

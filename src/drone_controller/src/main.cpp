@@ -1,13 +1,16 @@
-#include <rclcpp/qos.hpp>
 #include "rclcpp/executors.hpp"
-#include "../include/drone.hpp"
 
+#include "../include/drone_controller.hpp"
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    rclcpp::QoS qos1(10);
-    auto node = std::make_shared<Drone>("drone-xxx", 1, Point{0.0, 0.0, 0.0}, qos1);
-    rclcpp::spin(node);
+    
+    auto controller = std::make_shared<DroneController>("default_drone_controller");
+    controller->init(
+        "/workspaces/swarm_of_drons/src/drone_controller/image/swarm_data_drons.csv"
+    );
+
+    rclcpp::spin(controller);
     rclcpp::shutdown();
     return 0;
 }
