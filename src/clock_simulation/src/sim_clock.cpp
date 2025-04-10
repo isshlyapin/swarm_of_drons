@@ -12,7 +12,7 @@ class SimClockPublisher : public rclcpp::Node {
 public:
     SimClockPublisher() : Node("sim_clock"), sim_time_(0, 0) {
         // Объявляем параметры
-        this->declare_parameter("time_scale", 1);       // Масштаб времени (1.0 = реальное время)
+        this->declare_parameter("time_scale", 1.0);     // Масштаб времени (1.0 = реальное время)
         this->declare_parameter("publish_rate", 100);   // Частота публикации в Гц
         this->declare_parameter("start_paused", false); // Начать на паузе
 
