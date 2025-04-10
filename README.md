@@ -1,2 +1,2 @@
-# swarm_of_drons
+# swarm_of_drones
 Управление роем в трехмерном пр-ве + симуляция в Gazebo

@@ -1,34 +1,27 @@
 {
     "name": "ros2 workspace",
     "image": "docker.io/isshlyapin/ros2:1.1",
-    "mounts": [
-        "source=/etc/localtime,target=/etc/localtime,type=bind",
-        "source=/run/user/1000,target=/tmp/runtume-root,type=bind"
-    ],
     "customizations": {
         "vscode": {
             "extensions": [
-                "ms-azuretools.vscode-docker",
-                "ms-python.black-formatter",
-                "ms-python.vscode-pylance",
                 "ms-python.python",
                 "ms-python.debugpy",
-                "streetsidesoftware.code-spell-checker-russian",
+                "xaver.clang-format",
                 "Gruntfuggly.todo-tree",
+                "ms-vscode.cmake-tools",
+                "ms-python.vscode-pylance",
+                "ms-python.black-formatter",
+                "ms-azuretools.vscode-docker",
                 "christian-kohler.path-intellisense",
                 "streetsidesoftware.code-spell-checker",
-                "ms-vscode.cmake-tools",
                 "llvm-vs-code-extensions.vscode-clangd",
-                "xaver.clang-format",
-                "BracketPairColorDLW.bracket-pair-color-dlw"
+                "BracketPairColorDLW.bracket-pair-color-dlw",
+                "streetsidesoftware.code-spell-checker-russian"
             ],
             "settings": {
-                "clangd.path": "/usr/bin/clangd-19"
+                "clangd.path": "/usr/bin/clangd-19",
+                "clang-format.executable": "/usr/bin/clang-format-19"
             }
         }
-    },
-    "runArgs": [
-        "--net=host",
-        "--device=/dev/dri:/dev/dri"
-    ]
+    }
 }
