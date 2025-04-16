@@ -1,6 +1,6 @@
 {
     "name": "ros2 workspace",
-    "image": "docker.io/isshlyapin/ros2:1.1",
+    "image": "docker.io/isshlyapin/ros2:1.2",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -23,5 +23,20 @@
                 "clang-format.executable": "/usr/bin/clang-format-19"
             }
         }
-    }
+    },
+    "containerEnv": {
+        "DISPLAY": "unix:0",
+        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST",
+        "ROS_DOMAIN_ID": "42"
+    },
+    "runArgs": [
+        "--net=host",
+        "--pid=host",
+        "--ipc=host",
+        "-e", "DISPLAY=${env:DISPLAY}"
+    ],
+    "mounts": [
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
+        "source=/dev/dri,target=/dev/dri,type=bind,consistency=cached"
+    ]
 }
