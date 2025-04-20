@@ -1,31 +1,42 @@
 {
     "name": "ros2 workspace",
-    "image": "docker.io/isshlyapin/ros2:1.0",
-    "mounts": [
-        "source=/etc/localtime,target=/etc/localtime,type=bind",
-        "source=/run/user/1000,target=/tmp/runtume-root,type=bind"
-    ],
+    "image": "docker.io/isshlyapin/ros2:1.2",
     "customizations": {
         "vscode": {
             "extensions": [
-                "ms-azuretools.vscode-docker",
-                "ms-python.black-formatter",
-                "ms-python.vscode-pylance",
                 "ms-python.python",
                 "ms-python.debugpy",
-                "streetsidesoftware.code-spell-checker-russian",
+                "xaver.clang-format",
                 "Gruntfuggly.todo-tree",
+                "ms-vscode.cmake-tools",
+                "ms-python.vscode-pylance",
+                "ms-python.black-formatter",
+                "ms-azuretools.vscode-docker",
                 "christian-kohler.path-intellisense",
                 "streetsidesoftware.code-spell-checker",
-                "ms-vscode.cmake-tools",
                 "llvm-vs-code-extensions.vscode-clangd",
-                "xaver.clang-format",
-                "BracketPairColorDLW.bracket-pair-color-dlw"
-            ]
+                "BracketPairColorDLW.bracket-pair-color-dlw",
+                "streetsidesoftware.code-spell-checker-russian"
+            ],
+            "settings": {
+                "clangd.path": "/usr/bin/clangd-19",
+                "clang-format.executable": "/usr/bin/clang-format-19"
+            }
         }
+    },
+    "containerEnv": {
+        "DISPLAY": "unix:0",
+        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST",
+        "ROS_DOMAIN_ID": "42"
     },
     "runArgs": [
         "--net=host",
-        "--device=/dev/dri:/dev/dri"
+        "--pid=host",
+        "--ipc=host",
+        "-e", "DISPLAY=${env:DISPLAY}"
+    ],
+    "mounts": [
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
+        "source=/dev/dri,target=/dev/dri,type=bind,consistency=cached"
     ]
 }
