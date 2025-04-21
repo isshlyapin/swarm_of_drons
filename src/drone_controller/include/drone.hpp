@@ -30,13 +30,17 @@ private:
     using Vector3 = Eigen::Vector3d;
 
 public:
-    Drone(const std::string &node_name, int id);
+    Drone(const std::string &model, int id);
     
     Drone(const std::string &model, int id,  Point pos);
 
     std::string getReportTopic() { return realName + "/report"; }
     std::string getMissionTopic() { return realName + "/mission"; }
     std::string getOdometryTopic() { return realName + "/odometry"; }
+
+    Point getCurrentPosition() const { return currentPosition; }
+
+    std::string getModel() const { return model; }
 
 private:
     void flight(Point targetPoint, Vector3 velocity);
@@ -47,6 +51,7 @@ private:
 
 private:
     int id;
+    std::string model;
     std::string realName;
     Point currentPosition;
     rclcpp::Publisher<MsgReportT>::SharedPtr     reportPublisher;

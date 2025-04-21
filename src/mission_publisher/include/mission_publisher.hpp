@@ -7,7 +7,7 @@
 #include <fstream>
 #include <thread>
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -57,7 +57,7 @@ private:
     struct Mission {
         int drone_id;
         rclcpp::Time start_time;
-        std::vector<int> velocities;
+        std::vector<double> velocities;
         std::vector<geometry_msgs::msg::Pose> poses;
     };
 

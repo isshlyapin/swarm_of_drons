@@ -14,6 +14,7 @@ find_package(data_utils REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(drone_interfaces REQUIRED)
+find_package(navigator_interfaces REQUIRED)
 
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -43,6 +44,7 @@ ament_target_dependencies(drone_controller
     data_utils
     geometry_msgs
     drone_interfaces
+    navigator_interfaces
 )
 
 install(TARGETS

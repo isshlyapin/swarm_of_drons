@@ -1,8 +1,8 @@
-#include <fastcsv/csv.hpp>
+#include <vector>
+
 #include <magic_enum.hpp>
-#include <rclcpp/exceptions/exceptions.hpp>
-#include <rclcpp/logging.hpp>
-#include <rcutils/logging.h>
+#include <fastcsv/csv.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include "drone_controller.hpp"
 
@@ -15,6 +15,8 @@ DroneController::DroneController(const std::string& nodeName)
     declare_parameter("drone_odm_qos", 100);
     declare_parameter("drone_mis_qos", 25);
     declare_parameter("drone_rep_qos", 25);
+
+    declare_parameter("find_free_drone_rate", 0.2);
 
     declare_parameter<std::string>("drones_file", "");
 
@@ -36,8 +38,75 @@ DroneController::DroneController(const std::string& nodeName)
         }
     );
 
+    freeDroneService = this->create_service<SrvFreeDroneT>(
+        "free_drone_service",
+        [this](const std::shared_ptr<SrvFreeDroneT::Request> request,
+                     std::shared_ptr<SrvFreeDroneT::Response> response) {
+            this->freeDroneHandler(request, response);
+        }
+    );
+
     init(get_parameter("drones_file").as_string());
     RCLCPP_INFO(this->get_logger(), "DroneController: Drones init");
+}
+
+std::vector<int> DroneController::findFreeDrone() {
+    std::vector<int> freeDrones;
+    while (freeDrones.empty()) {
+        rclcpp::Rate rate{
+            get_parameter("find_free_drone_rate").as_double(), 
+            this->get_clock()
+        };
+
+        for (const auto& [droneId, droneInfo] : drones) {
+            if (droneInfo.getState() == DroneState::READY && droneInfo.getMissionCount() == 0) {
+                freeDrones.push_back(droneId);
+            }
+        }
+
+        rate.sleep();
+    }
+
+    return freeDrones;
+}
+
+int DroneController::getNearDroneID(std::vector<int>& v, Point target) {
+    if (v.empty()) {
+        throw std::runtime_error("Invalid input vector");
+    }
+
+    int nearDroneID = v[0];
+    double nearSqDistance = (drones.at(nearDroneID).drone->getCurrentPosition() - target).squaredNorm();
+    for (const auto& droneId : v) {
+        double sqDistance = (drones.at(droneId).drone->getCurrentPosition() - target).squaredNorm();
+        if (sqDistance < nearSqDistance) {
+            nearDroneID = droneId;
+            nearSqDistance = sqDistance;
+        }
+    }
+
+    return nearDroneID;
+}
+
+void DroneController::freeDroneHandler (
+    const std::shared_ptr<SrvFreeDroneT::Request> request,
+          std::shared_ptr<SrvFreeDroneT::Response> response )
+{
+    Point targetPoint{
+        request->pose_dronport.position.x, 
+        request->pose_dronport.position.y,
+        request->pose_dronport.position.z
+    };
+    auto freeDrones = findFreeDrone();
+
+    auto nearDroneID = getNearDroneID(freeDrones, targetPoint);
+    Point nearDronePosition = drones[nearDroneID].drone->getCurrentPosition();
+
+    response->model = drones[nearDroneID].drone->getModel();
+    response->id = nearDroneID;
+    response->pose_drone.position.x = nearDronePosition.x();
+    response->pose_drone.position.y = nearDronePosition.y();
+    response->pose_drone.position.z = nearDronePosition.z();
 }
 
 void DroneController::init(std::string pathToDronesCSV) {
@@ -62,30 +131,27 @@ void DroneController::init(std::string pathToDronesCSV) {
 
         auto drone = std::make_shared<Drone>(model, id, Point{x, y, z});
         
-        DroneInfo droneInfo;
-        droneInfo.drone = drone;
-        droneInfo.count_missions = 0;
-        droneInfo.state = magic_enum::enum_cast<DroneState>(state).value();
-        droneInfo.missionPublisher = this->create_publisher<MsgMissionT>(
+        drones.emplace(id, DroneInfo{});
+        drones[id].drone = drone;
+        drones[id].setState(magic_enum::enum_cast<DroneState>(state).value());
+        drones[id].missionPublisher = this->create_publisher<MsgMissionT>(
             drone->getMissionTopic(),
             this->get_parameter("drone_mis_qos").as_int()
         );
-        droneInfo.reportSubscription = this->create_subscription<MsgReportT>(
+        drones[id].reportSubscription = this->create_subscription<MsgReportT>(
             drone->getReportTopic(),
             this->get_parameter("drone_rep_qos").as_int(),
             [this](const MsgReportPtrT msg) {
                 this->reportHandler(msg);
             }
         );
-        droneInfo.odometrySubscription = this->create_subscription<MsgOdometryT>(
+        drones[id].odometrySubscription = this->create_subscription<MsgOdometryT>(
             drone->getOdometryTopic(),
             this->get_parameter("drone_odm_qos").as_int(),
             [this](const MsgOdometryPtrT msg) {
                 this->odometryHandler(msg);
             }
         );
-
-        drones[id] = droneInfo;
     }
 }
 
@@ -104,7 +170,7 @@ void DroneController::globalMissionHandler(const MsgGlobalMissionPtrT msg) {
 
     RCLCPP_INFO(this->get_logger(), "DroneController: Global mission received");
 
-    drones[msg->drone_id].count_missions++;
+    drones[msg->drone_id].incrementMissionCount();
 
     MsgMissionT mission;
     mission.poses      = msg->poses;
@@ -135,9 +201,9 @@ void DroneController::reportHandler(const MsgReportPtrT msg) {
     if (!magic_enum::enum_contains<DroneState>(msg->state)) {
         RCLCPP_ERROR(this->get_logger(), "DroneController: Drone [%s_%d] state invalid: %d", msg->model.c_str(), msg->id, msg->state);
     } else {
-        drones[msg->id].state = magic_enum::enum_cast<DroneState>(msg->state).value();
-        if (drones[msg->id].state == DroneState::READY) {
-            drones[msg->id].count_missions--;
+        drones[msg->id].setState(magic_enum::enum_cast<DroneState>(msg->state).value());
+        if (drones[msg->id].getState() == DroneState::READY) {
+            drones[msg->id].decrementMissionCount();
         }
     }
 }

@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     std::string mission_file = "";
     int publish_all = 0;
     int mission_index = -1;
-    int interval = 10;
+    int interval = 1000;
     
     // Обрабатываем аргументы командной строки
     for (int i = 1; i < argc; ++i) {

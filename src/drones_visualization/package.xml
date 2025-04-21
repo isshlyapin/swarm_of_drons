@@ -1,26 +1,21 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>drone_controller</name>
-  <version>0.1.0</version>
-  <description>Deals with the distribution of missions between a group of drones</description>
-  <maintainer email="shlyapin2005@gmail.com">isshlyapin</maintainer>
-  <license>MIT</license>
+  <name>drones_visualization</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="shlyapin2005@gmail.com">root</maintainer>
+  <license>TODO: License declaration</license>
 
   <depend>rclcpp</depend>
+  <depend>visualization_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>std_srvs</depend>
   <depend>nav_msgs</depend>
-  <depend>magic_enum</depend>
-  <depend>data_utils</depend>
   <depend>geometry_msgs</depend>
+  <depend>magic_enum</depend>
   <depend>drone_interfaces</depend>
-  <depend>navigator_interfaces</depend>
-
-  <build_depend>eigen</build_depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>eigen3_cmake_module</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

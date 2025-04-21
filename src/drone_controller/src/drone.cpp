@@ -12,6 +12,7 @@ Drone::Drone(const std::string &model, int id, Point pos)
         rclcpp::NodeOptions().use_global_arguments(false)
     ),
     id(id),
+    model(model),
     realName(model + "_" + std::to_string(id)), 
     currentPosition(pos) 
 {
@@ -50,8 +51,8 @@ Drone::Drone(const std::string &model, int id, Point pos)
     );
 }
 
-Drone::Drone(const std::string &node_name, int id) 
-  : Drone(node_name, id, Point(0.0, 0.0, 0.0)) {};
+Drone::Drone(const std::string &model, int id) 
+  : Drone(model, id, Point(0.0, 0.0, 0.0)) {};
 
 void Drone::flight(Point targetPoint, Vector3 velocity) {
     Point newPos = currentPosition;
