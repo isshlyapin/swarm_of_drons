@@ -1,6 +1,6 @@
 {
     "name": "ros2 workspace",
-    "image": "docker.io/isshlyapin/ros2:1.2",
+    "image": "docker.io/isshlyapin/ros2:1.3",
     "customizations": {
         "vscode": {
             "extensions": [

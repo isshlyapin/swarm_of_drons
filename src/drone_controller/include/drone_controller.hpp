@@ -1,34 +1,67 @@
 #pragma once
 
+#include <memory>
+#include <string>
 #include <thread>
-#include <future>
+#include <vector>
 #include <unordered_map>
 
-#include "rclcpp/node.hpp"
-#include <rclcpp/rate.hpp>
-#include <rclcpp/logging.hpp>
-#include <rclcpp/duration.hpp>
-#include "rclcpp/publisher.hpp"
-#include "rclcpp/executors.hpp"
-#include "rclcpp/subscription.hpp"
+#include <Eigen/Geometry>
+#include <rclcpp/rclcpp.hpp>
 
+#include "drone_interfaces/msg/report.hpp"
 #include "drone_interfaces/msg/mission.hpp"
 #include "drone_interfaces/msg/global_mission.hpp"
+#include "navigator_interfaces/srv/free_drone.hpp"
 
-#include "csv.hpp"
 #include "drone.hpp"
 
-enum class DroneState {
-    READY = 0,
-    FLY   = 1
-};
-
 struct DroneInfo {
+    std::shared_ptr<Drone> drone;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr       odometrySubscription;
+    rclcpp::Publisher<drone_interfaces::msg::Mission>::SharedPtr   missionPublisher;
+    rclcpp::Subscription<drone_interfaces::msg::Report>::SharedPtr reportSubscription;
+
+    // DroneInfo(std::shared_ptr<Drone> dronePtr)
+    //     : drone(dronePtr), state(DroneState::READY), count_missions(0) {}
+
+    void decrementMissionCount() {
+        // countMissionsMutex.lock();
+        --count_missions;
+        // countMissionsMutex.unlock();
+    }
+
+    void incrementMissionCount() {
+        // countMissionsMutex.lock();
+        ++count_missions;
+        // countMissionsMutex.unlock();
+    }
+
+    int getMissionCount() const {
+        // countMissionsMutex.lock();
+        int currentCount = count_missions;
+        // countMissionsMutex.unlock();
+        return currentCount;
+    }
+
+    void setState(DroneState newState) {
+        // stateMutex.lock();
+        state = newState;
+        // stateMutex.unlock();
+    }
+
+    DroneState getState() const {
+        // stateMutex.lock();
+        DroneState currentState = state;
+        // stateMutex.unlock();
+        return currentState;
+    }
+    
+private:
     DroneState state;
-    Drone::SharedPtr drone;
-    rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr       reportSubscription;
-    rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr    locationSubscription;
-    rclcpp::Publisher<drone_interfaces::msg::Mission>::SharedPtr missionPublisher;
+    int count_missions;
+    // mutable std::mutex countMissionsMutex;
+    // mutable std::mutex stateMutex;
 };
 
 class DroneController : public rclcpp::Node {
@@ -36,101 +69,45 @@ private:
     using MsgGlobalMissionT    = drone_interfaces::msg::GlobalMission;
     using MsgGlobalMissionPtrT = MsgGlobalMissionT::SharedPtr;
 
+    using MsgMissionT    = drone_interfaces::msg::Mission;
+    using MsgMissionPtrT = MsgMissionT::SharedPtr;
+
+    using MsgReportT    = drone_interfaces::msg::Report;
+    using MsgReportPtrT = MsgReportT::SharedPtr;    
+
+    using MsgOdometryT    = nav_msgs::msg::Odometry;
+    using MsgOdometryPtrT = MsgOdometryT::SharedPtr;
+
+    using SrvFreeDroneT    = navigator_interfaces::srv::FreeDrone;
+
+    using Point = Eigen::Vector3d;
+
 public:
-    DroneController(const std::string& nodeName) : Node(nodeName) {
-        RCLCPP_INFO(this->get_logger(), "DroneController %s: Created", nodeName.c_str());
+    DroneController(const std::string& nodeName);
 
-        set_parameter(rclcpp::Parameter("use_sim_time", true));
-
-        RCLCPP_INFO(this->get_logger(), "DroneController %s: Global Mission Subscription Init", nodeName.c_str());
-        globalMissionSubscription = create_subscription<MsgGlobalMissionT>(
-            "global_mission",
-            100,
-            [this](const MsgGlobalMissionPtrT msg) {
-                this->globalMissionHandler(msg);
-            }
-        );
-    }
-
-    void init(std::string pathToDronesCSV) {
-        io::CSVReader<6> in(pathToDronesCSV);
-        in.read_header(io::ignore_extra_column, "model", "id", "state", "x", "y", "z");
-
-        std::string model;
-        int id;
-        int state;
-        double x, y, z;
-
-        executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-
-        while (in.read_row(model, id, state, x, y, z)) {
-            DroneInfo droneInfo;
-            auto drone = std::make_shared<Drone>(model, id, Point{x, y, z}, 100);
-            droneInfo.drone = drone;
-            droneInfo.state = static_cast<DroneState>(state);
-            droneInfo.missionPublisher = this->create_publisher<drone_interfaces::msg::Mission>(
-                drone->getMissionTopic(),
-                100
-            );
-            droneInfo.reportSubscription = this->create_subscription<std_msgs::msg::UInt16>(
-                drone->getReportTopic(),
-                100,
-                [this](const std_msgs::msg::UInt16::SharedPtr msg) {
-                    this->reportHandler(msg);
-                }
-            );
-            droneInfo.locationSubscription = this->create_subscription<geometry_msgs::msg::Pose>(
-                drone->getLocationTopic(),
-                100,
-                [this](const geometry_msgs::msg::Pose::SharedPtr msg) {
-                    this->locationHandler(msg);
-                }
-            );
-            drones[id] = droneInfo;
-
-            executor->add_node(drone);
-        }
-
-        executorThread = std::thread(
-            [this]() {
-                RCLCPP_INFO(this->get_logger(), "DroneController: Executor Thread Started");
-                executor->spin();
-            }
-        );
-    }
-
+    std::vector<Drone::SharedPtr> getDrones() const;
 private:
-    void globalMissionHandler(const MsgGlobalMissionPtrT msg) {
-        RCLCPP_INFO(this->get_logger(), "DroneController: Global Mission Received");
-        if (drones.find(msg->drone_id) != drones.end()) {
-            drone_interfaces::msg::Mission mission;
-            mission.poses      = msg->poses;
-            mission.start_time = msg->start_time;
-            mission.velocities = msg->velocities;  
+    void init(std::string pathToDronesCSV);
     
-            std::thread missionThread(
-                [this, msg, mission]() {
-                    if (this->now() < msg->start_time) {
-                        RCLCPP_INFO(this->get_logger(), "DroneController: Waiting for start time");
-                        rclcpp::Duration dtime = rclcpp::Time(msg->start_time) - this->now();
-                        rclcpp::Rate rate(dtime, this->get_clock());
-                        rate.sleep();
-                    }
-                    RCLCPP_INFO(this->get_logger(), "DroneController: Mission for Drone published");
-                    drones[msg->drone_id].missionPublisher->publish(mission);
-                }
-            );
-            missionThread.detach();
-        }
-    }
+    void globalMissionHandler(const MsgGlobalMissionPtrT msg);
 
-    void reportHandler(const std_msgs::msg::UInt16::SharedPtr msg) {}
+    void reportHandler(const MsgReportPtrT msg);
 
-    void locationHandler(const geometry_msgs::msg::Pose::SharedPtr msg) {}
+    void odometryHandler(const MsgOdometryPtrT msg);
+
+    void freeDroneHandler(
+        const std::shared_ptr<SrvFreeDroneT::Request> request,
+              std::shared_ptr<SrvFreeDroneT::Response> response
+    );
+
+    std::vector<int> findFreeDrone();
+
+    int getNearDroneID(std::vector<int>& v, Point target);
 
 private:
     std::thread executorThread;
     rclcpp::Executor::SharedPtr executor;
     std::unordered_map<int, DroneInfo> drones;
-    rclcpp::Subscription<MsgGlobalMissionT>::SharedPtr globalMissionSubscription;    
+    rclcpp::Subscription<MsgGlobalMissionT>::SharedPtr globalMissionSubscription;
+    rclcpp::Service<SrvFreeDroneT>::SharedPtr freeDroneService;
 };

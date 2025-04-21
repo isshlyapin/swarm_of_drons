@@ -15,6 +15,7 @@ endif()
 # Находим зависимости
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(data_utils REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(drone_interfaces REQUIRED)
@@ -31,6 +32,7 @@ add_library(${PROJECT_NAME}_lib
 ament_target_dependencies(${PROJECT_NAME}_lib
   rclcpp
   std_msgs
+  data_utils
   geometry_msgs
   drone_interfaces
 )
