@@ -146,7 +146,6 @@ MissionPublisher::Mission MissionPublisher::parseMissionFromJson(const nlohmann:
 
     const auto& velocities = mission_json["velocities"];
     for (const auto& v : velocities) {
-
         mission.velocities.push_back(v.get<double>());
     }
     

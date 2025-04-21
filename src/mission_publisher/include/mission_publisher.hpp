@@ -58,6 +58,7 @@ private:
         int drone_id;
         rclcpp::Time start_time;
         std::vector<double> velocities;
+
         std::vector<geometry_msgs::msg::Pose> poses;
     };
 
