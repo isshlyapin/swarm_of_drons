@@ -3,3 +3,6 @@ log/
 install/
 build/
 .cache/
+.clangd
+.clang-format
+

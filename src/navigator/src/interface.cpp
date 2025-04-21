@@ -2,6 +2,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
+#include <rcl/time.h>
+#include <rclcpp/clock.hpp>
+#include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include "../include/csv.hpp"
 
@@ -81,9 +85,15 @@ void GraphInterface::parceMissions(const std::string pathToMissions, float Vmin,
 }
 
 void GraphInterface::publicRoutes(std::string NameOfService, float Vmin, float Vmax) {
-    rclcpp::Client<navigator_interfaces::srv::FreeDrone>::SharedPtr client =
-        this->create_client<navigator_interfaces::srv::FreeDrone>(NameOfService);
-
+    auto node = rclcpp::Node::make_shared("minimal_client");
+    auto client = node->create_client<navigator_interfaces::srv::FreeDrone>("free_drone_service");
+    while (!client->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(node->get_logger(), "client interrupted while waiting for service to appear.");
+        return ;
+      }
+      RCLCPP_INFO(node->get_logger(), "waiting for service to appear...");
+    }
     auto request = std::make_shared<navigator_interfaces::srv::FreeDrone::Request>();
     std::shared_ptr<Mission> curMission = allmissions.front();
     allmissions.pop();
@@ -91,34 +101,65 @@ void GraphInterface::publicRoutes(std::string NameOfService, float Vmin, float V
     request->pose_dronport.position.y = curMission->start->getY();
     request->pose_dronport.position.z = 5;
 
-    RCLCPP_INFO(this->get_logger(), "Waiting answer at %s", NameOfService.c_str());
-    while (!client->wait_for_service()) {}
-
-    auto result = client->async_send_request(request);
-
-    if (rclcpp::spin_until_future_complete(shared_from_this(), result) !=
-        rclcpp::FutureReturnCode::SUCCESS) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call %s", NameOfService.c_str());
+    // request->pose_dronport.position.x = 41;
+    // request->pose_dronport.position.y = 12;
+    // request->pose_dronport.position.z = 5;
+    auto result_future = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, result_future) !=
+      rclcpp::FutureReturnCode::SUCCESS)
+    {
+      RCLCPP_ERROR(node->get_logger(), "service call failed :(");
+      client->remove_pending_request(result_future);
+      return;
     }
+    auto result = result_future.get();
+    // auto result = result_future;
+    RCLCPP_INFO(
+      node->get_logger(), "Result: %s_%d",
+      result->model.c_str(), result->id);
 
+    // auto request = std::make_shared<navigator_interfaces::srv::FreeDrone::Request>();
+    // std::shared_ptr<Mission> curMission = allmissions.front();
+    // allmissions.pop();
+    // request->pose_dronport.position.x = curMission->start->getX();
+    // request->pose_dronport.position.y = curMission->start->getY();
+    // request->pose_dronport.position.z = 5;
+
+    // RCLCPP_INFO(this->get_logger(), "Waiting answer at %s", NameOfService.c_str());
+    // while (!client->wait_for_service()) {}
+
+    // printf("before spin\n");
+    // auto result = client->async_send_request(
+    //     request,
+    //     [this](rclcpp::Client<navigator_interfaces::srv::FreeDrone>::SharedFuture result) {
+    //         RCLCPP_INFO(this->get_logger(), "Request sent");
+    //         RCLCPP_INFO(this->get_logger(), "Result drone %s_%d", result.get()->model.c_str(), result.get()->id);
+    //     }
+    // );
+    
+    // printf("after spin\n");
+    // RCLCPP_INFO(this->get_logger(), "Result drone %s_%d", result.get()->model.c_str(), result.get()->id);
     size_t numbernode = 0;
-    while (CheckEqualPose(allnodes[numbernode]->getX(), result.get()->pose_drone.position.x, 
-                            allnodes[numbernode]->getY(), result.get()->pose_drone.position.y,
+    while (CheckEqualPose(allnodes[numbernode]->getX(), result->pose_drone.position.x, 
+                            allnodes[numbernode]->getY(), result->pose_drone.position.y,
                             0, 0)) {
         numbernode++;
     }
 
-    rclcpp::Duration Tdelay = rclcpp::Duration(1, 0);
-    rclcpp::Time Tstart = this->now() + Tdelay;
+    rclcpp::Clock clock(RCL_SYSTEM_TIME);
+    rclcpp::Duration Tdelay = rclcpp::Duration(100, 0);
+    rclcpp::Time Tstart = clock.now() + Tdelay;
+    // rclcpp::Time Tfinish(0, 0, RCL_ROS_TIME);
+    // printf("times\n");
+    // if (Tfinish > Tstart) printf("Tfinish > Tstart\n");
+    // printf("times\n");
     Route curRoute = allnodes[numbernode]->GenRouteTo(curMission->start, allnodes, Tstart, Vmin, Vmax);
     
-    rclcpp::Publisher<drone_interfaces::msg::GlobalMission>::SharedPtr mission_publisher = this->create_publisher<drone_interfaces::msg::GlobalMission>("global_mission", 1000);
-
     drone_interfaces::msg::GlobalMission sendMission;
-    fillMsgMission( curRoute, sendMission, result.get()->id);
+    fillMsgMission( curRoute, sendMission, result->id);
     mission_publisher->publish(sendMission);
 
     curRoute = curMission->start->GenRouteTo(curMission->finish, allnodes, curRoute.time_finish + Tdelay, Vmin, Vmax);
-    fillMsgMission(curRoute, sendMission, result.get()->id);
+    fillMsgMission(curRoute, sendMission, result->id);
     mission_publisher->publish(sendMission);
 }

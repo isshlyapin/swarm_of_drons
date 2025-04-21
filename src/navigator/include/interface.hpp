@@ -7,7 +7,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <queue>
+
 #include "drone_interfaces/msg/global_mission.hpp"
+#include "navigator_interfaces/srv/free_drone.hpp"
+
 
 #include "../include/graph.hpp"
 
@@ -15,6 +18,9 @@ using namespace std::chrono_literals;
 
 class GraphInterface: public rclcpp::Node {
     private:
+        rclcpp::Client<navigator_interfaces::srv::FreeDrone>::SharedPtr client;
+        rclcpp::Publisher<drone_interfaces::msg::GlobalMission>::SharedPtr mission_publisher;
+
         std::vector<std::shared_ptr<graph_node>> allnodes;
         std::queue<std::shared_ptr<Mission>> allmissions;
         rclcpp::TimerBase::SharedPtr timer_;
@@ -27,9 +33,11 @@ class GraphInterface: public rclcpp::Node {
     public:
         GraphInterface(const std::string& nodename)
         : Node(nodename) {
+            client = this->create_client<navigator_interfaces::srv::FreeDrone>("free_drone_service");
+            mission_publisher = this->create_publisher<drone_interfaces::msg::GlobalMission>("global_mission", 1000);
             timer_ = this->create_wall_timer(500ms, 
             [this](){
-                this->publicRoutes(this->NameOfService, this->Vmin, this->Vmax);
+                this->publicRoutes("free_drone_service", 10, 40);
             });
         }
     

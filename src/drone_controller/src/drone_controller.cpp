@@ -107,6 +107,8 @@ void DroneController::freeDroneHandler (
     response->pose_drone.position.x = nearDronePosition.x();
     response->pose_drone.position.y = nearDronePosition.y();
     response->pose_drone.position.z = nearDronePosition.z();
+
+    RCLCPP_INFO(this->get_logger(), "DroneController: Free drone [%s_%d] found", response->model.c_str(), nearDroneID);
 }
 
 void DroneController::init(std::string pathToDronesCSV) {

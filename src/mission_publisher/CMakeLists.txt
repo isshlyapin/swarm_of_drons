@@ -63,10 +63,4 @@ install(DIRECTORY include/
   DESTINATION include/
 )
 
-# Добавляем файлы с миссиями в установку
-install(DIRECTORY
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../missions/
-  DESTINATION share/${PROJECT_NAME}/missions
-)
-
 ament_package()
