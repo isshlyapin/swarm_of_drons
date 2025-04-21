@@ -101,6 +101,7 @@ struct Route {
     std::vector<std::shared_ptr<graph_node>> route;
     std::vector<float> velocities;
     rclcpp::Time time_start;
+    rclcpp::Time time_finish;
     int echelon = 1;
 };
 
