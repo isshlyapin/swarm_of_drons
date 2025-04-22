@@ -225,6 +225,12 @@ void DroneController::reportHandler(const Drone::MsgReportPtrT msg) {
         drones[msg->id]->setState(state);
         if (state == DroneState::READY) {
             drones[msg->id]->decrementMissionCount();
+            Drone::Point lastPose{
+                msg->pose.position.x,
+                msg->pose.position.y,
+                msg->pose.position.z
+            };
+            drones[msg->id]->setPosition(lastPose);
         }
     }
 }

@@ -148,6 +148,11 @@ void Drone::sendReport(DroneState state) {
     report.model = realName.substr(0, realName.rfind('_'));
     report.id = id;
     report.state = magic_enum::enum_integer(state);
+
+    report.pose.position.x = currentPosition.x();
+    report.pose.position.y = currentPosition.y();
+    report.pose.position.z = currentPosition.z();
+
     reportPublisher->publish(report);
     RCLCPP_INFO(get_logger(), "Drone %s: Report sent", realName.c_str());
 }
