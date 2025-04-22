@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>drone_composition</name>
+  <version>0.1.0</version>
+  <description>Responsible for distributing missions between a group of drones and the drones themselves.</description>
+  <maintainer email="shlyapin2005@gmail.com">isshlyapin</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>magic_enum</exec_depend>
+  <exec_depend>drone_interfaces</exec_depend>
+  <exec_depend>rclcpp_components</exec_depend>
+
+  <build_depend>eigen</build_depend>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>eigen3_cmake_module</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
