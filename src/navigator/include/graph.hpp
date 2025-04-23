@@ -16,9 +16,9 @@ struct Route;
 class graph_node: public std::enable_shared_from_this<graph_node> {
     private:
         const std::string name;
-        rclcpp::Time zerotime = rclcpp::Time(0);
-        float x;
-        float y;
+        rclcpp::Time zerotime = rclcpp::Time(static_cast<int64_t>(0), RCL_ROS_TIME);
+        double x;
+        double y;
         int echelon = 1;
         bool dronport = true;
         size_t depth_recursion = 1;
@@ -28,18 +28,18 @@ class graph_node: public std::enable_shared_from_this<graph_node> {
         TimeTable timetable;
         TimeTable poss_times;
 
-        bool CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node, std::shared_ptr<edge>& edge, float Vmin, float Vmax);
+        bool CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node, std::shared_ptr<edge>& edge, double Vmin, double Vmax);
 
         std::shared_ptr<graph_node>& GetRightNeighbour(std::shared_ptr<graph_node>& goal, 
-                std::vector<std::shared_ptr<graph_node>>& allNodes, float& vel,
-                rclcpp::Time t_finish, rclcpp::Time& t_start, float Vmin, float Vmax);
+                std::vector<std::shared_ptr<graph_node>>& allNodes, double& vel,
+                rclcpp::Time t_finish, rclcpp::Time& t_start, double Vmin, double Vmax);
     
     public:
-        graph_node(const std::string& name, float x, float y, int echelon, bool dronport, size_t rec) 
+        graph_node(const std::string& name, double x, double y, int echelon, bool dronport, size_t rec) 
         : name(name), x(x), y(y), echelon(echelon), dronport(dronport), depth_recursion(rec) {}
         
-        float getX()                                             {return x;}
-        float getY()                                             {return y;}
+        double getX()                                            {return x;}
+        double getY()                                            {return y;}
         std::string getName()                                    {return name;}
         TimeTable& getTimes()                                    {return timetable;}
         std::vector<std::shared_ptr<graph_node>>& getNeighbors() {return neighbors;}
@@ -59,16 +59,16 @@ class graph_node: public std::enable_shared_from_this<graph_node> {
 
         void ClearTimeValues(std::vector<std::shared_ptr<graph_node>>& allNodes);
 
-        void CalcAllPossTimes(float Vmin, float Vmax, std::vector<std::shared_ptr<graph_node>>& involved_nodes);
+        void CalcAllPossTimes(double Vmin, double Vmax, std::vector<std::shared_ptr<graph_node>>& involved_nodes);
 
         void UpdateTimetables(Route& route);
 
         bool CanGoToThisNeighbour(std::shared_ptr<graph_node>& node, size_t numberNeighbour,
-            float& vel, rclcpp::Time t_finish, rclcpp::Time& t_start, float Vmin, float Vmax);
+            double& vel, rclcpp::Time t_finish, rclcpp::Time& t_start, double Vmin, double Vmax);
 
         Route GenRouteTo(std::shared_ptr<graph_node>& goal_node,
                         std::vector<std::shared_ptr<graph_node>>& allNodes,
-                        rclcpp::Time t_start, float Vmin, float Vmax);
+                        rclcpp::Time t_start, double Vmin, double Vmax);
 };
 
 class edge {
@@ -88,18 +88,18 @@ class edge {
 
         void AddTime(std::pair<rclcpp::Time, rclcpp::Time>& timing) {timetable.AppendTime(timing);}
 
-        float Length() {
-            float x1 = first_node->getX();
-            float x2 = second_node->getX();
-            float y1 = first_node->getY();
-            float y2 = second_node->getY();
+        double Length() {
+            double x1 = first_node->getX();
+            double x2 = second_node->getX();
+            double y1 = first_node->getY();
+            double y2 = second_node->getY();
             return ( std::sqrt( (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) );
         }
 };
 
 struct Route {
     std::vector<std::shared_ptr<graph_node>> route;
-    std::vector<float> velocities;
+    std::vector<double> velocities;
     rclcpp::Time time_start;
     rclcpp::Time time_finish;
     int echelon = 1;
@@ -109,8 +109,8 @@ struct Mission {
     std::shared_ptr<graph_node> start;
     std::shared_ptr<graph_node> finish;
     rclcpp::Time t_start;
-    float Vmin; float Vmax;
+    double Vmin; double Vmax;
 
-    Mission(std::shared_ptr<graph_node>& f, std::shared_ptr<graph_node>& s, float t_s, float V1, float V2)
+    Mission(std::shared_ptr<graph_node>& f, std::shared_ptr<graph_node>& s, rclcpp::Time t_s, double V1, double V2)
     : start(f), finish(s), t_start(t_s), Vmin(V1), Vmax(V2) {}
 };
