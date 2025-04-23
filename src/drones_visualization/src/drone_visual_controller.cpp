@@ -38,11 +38,11 @@ void DroneVisualController::init() {
     while (in.read_row(model, id, state, x, y, z)) {
         RCLCPP_INFO(this->get_logger(), "DroneVisualController: Adding drone %s with id %d", model.c_str(), id);
         std::string droneID = model + "_" + std::to_string(id);
-        if (droneModels.find(model) != droneModels.end()) {
+        if (droneModels.find(droneID) != droneModels.end()) {
             RCLCPP_ERROR(this->get_logger(), "DroneVisualController: Duplicate drone model %s", model.c_str());
             continue;       
         } else {
-            droneModels.insert(model);
+            droneModels.insert(droneID);
         }
         
         auto droneV = std::make_shared<DroneVisual>(droneID);
