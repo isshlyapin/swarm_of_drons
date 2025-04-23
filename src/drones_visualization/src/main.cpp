@@ -6,11 +6,16 @@ int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     
     auto controller = std::make_shared<DroneVisualController>("default_drone_visual_controller");
-    controller->init(
-        "/workspaces/swarm_of_drons/test/test1/drones.csv"
-    );
 
-    rclcpp::spin(controller);
+    rclcpp::Executor::SharedPtr executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+
+    executor->add_node(controller);
+    for (const auto& node : controller->getDrones()) {
+        executor->add_node(node);
+    }
+
+    executor->spin();
+
     rclcpp::shutdown();
     return 0;
 }
