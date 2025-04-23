@@ -16,7 +16,7 @@
 #include "../include/interface.hpp"
 
 bool GraphInterface::CheckEqualPose(double x1, double y1, double x2, double y2, double z1, double z2) {
-    double eps = 1e-2;
+    double eps = 1;
     if ( abs(x1 - x2) <= eps && abs(y2 - y1) <= eps && 
             abs(z2 - z1) <= eps) return true;
     return false;
@@ -27,6 +27,8 @@ void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMi
     // for (const auto& vel : path.velocities) {
     //     mission.velocities.push_back(vel);
     // }
+    mission.velocities.clear();
+
     for (size_t i = 0; i < path.velocities.size(); i++) {
         mission.velocities.push_back(static_cast<float>(path.velocities[i]));
     }
@@ -39,6 +41,8 @@ void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMi
         xyz[2] = 0;
         poses.push_back(xyz);
     }
+
+    mission.poses.clear();
 
     for (size_t i = 1; i < poses.size(); i++) {
         geometry_msgs::msg::Pose pose;
@@ -138,7 +142,7 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
       result->model.c_str(), result->id);
 
     size_t numbernode = 0;
-    while (CheckEqualPose(allnodes[numbernode]->getX(), allnodes[numbernode]->getY(), 
+    while (!CheckEqualPose(allnodes[numbernode]->getX(), allnodes[numbernode]->getY(), 
                         result->pose_drone.position.x, result->pose_drone.position.y,
                             0, 0)) {
         numbernode++;

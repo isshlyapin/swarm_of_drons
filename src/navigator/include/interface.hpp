@@ -37,7 +37,7 @@ class GraphInterface: public rclcpp::Node {
             mission_publisher = this->create_publisher<drone_interfaces::msg::GlobalMission>("global_mission", 1000);
             timer_ = this->create_wall_timer(500ms, 
             [this](){
-                this->publicRoutes("free_drone_service", 10, 40);
+                this->publicRoutes("free_drone_service", 5, 10);
             });
         }
     

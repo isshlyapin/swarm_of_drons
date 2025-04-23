@@ -14,7 +14,7 @@ Drone::Drone(const rclcpp::NodeOptions & options)
 
     RCLCPP_INFO(this->get_logger(), "Drone %s: Created", realName.c_str());
 
-    declare_parameter("flight_rate", 50.0);
+    declare_parameter("flight_rate", 500.0);
     declare_parameter("qos_report_publisher", 25);
     declare_parameter("qos_odometry_publisher", 100);
     declare_parameter("qos_mission_subscription", 10);
