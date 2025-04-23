@@ -15,13 +15,7 @@ bool graph_node::CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node,
                        std::shared_ptr<edge>& edge, float Vmin, float Vmax) {
     TimeTable new_poss;
     TimeTable PossToDep = poss_times;
-    //printf("possible times:\n");
-    //PossToDep.PrintTimes();
-    //printf("edge times:\n");
-    //edge->getTimes().PrintTimes();
     PossToDep -= edge->getTimes();
-    //printf("possible times -= edge times:\n");
-    //PossToDep.PrintTimes();
     rclcpp::Time Tmin = TimeTable::TimeFloatToRCL(edge->Length() / Vmax);
     rclcpp::Time Tmax = TimeTable::TimeFloatToRCL(edge->Length() / Vmin);
 
@@ -57,12 +51,8 @@ bool graph_node::CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node,
 
     if (new_poss != node->poss_times) {
         node->AddPossTimes(new_poss);
-        //printf("possible time to fly in node(new possible var): %s\n", node->getName().c_str());
-        //node->poss_times.PrintTimes();
         return true;
     }
-    //printf("possible time to fly in node(no changes): %s\n", node->getName().c_str());
-    //node->poss_times.PrintTimes();
     return false;
 }
 
@@ -74,13 +64,9 @@ bool graph_node::CanGoToThisNeighbour(std::shared_ptr<graph_node>& node, size_t 
     rclcpp::Time Tmax = TimeTable::TimeFloatToRCL((float)std::max((double)0,
         t_finish.seconds() - (node->getEdges())[numberNeighbour]->Length() / Vmax));
 
-    //printf("Tmin (when in neighbour): %f\n", Tmin.seconds());
-    //printf("Tmax (       ...       ): %f\n", Tmax.seconds());
-
     TimeTable edgestime = ((node->getEdges())[numberNeighbour])->getTimes();
     for (size_t i = 0; i < edgestime.getSize(); i++) {
         if ( edgestime.getTime(i).first < t_finish && edgestime.getTime(i).second > Tmax) {
-            //printf("Cant take (edge if)\n");
             return false;
         } else if (edgestime.getTime(i).first < t_finish && edgestime.getTime(i).second >= Tmin) {
             Tmin = edgestime.getTime(i).second;
@@ -192,23 +178,17 @@ Route graph_node::GenRouteTo(std::shared_ptr<graph_node>& goal_node,
 
     std::pair<rclcpp::Time, rclcpp::Time> start_time = {t_start, TimeTable::TimeFloatToRCL(-1)};
     poss_times.AppendTime(start_time);
-    //poss_times.PrintTimes();
     std::vector<std::shared_ptr<graph_node>> involved_nodes;
     CalcAllPossTimes(Vmin, Vmax, involved_nodes);
-
-    // for (size_t i = 0; i < allNodes.size(); i++) {
-    //     RCLCPP_INFO(rclcpp::get_logger("my_logger"), "node %s: %ld", allNodes[i]->getName().c_str(), i);
-    //     allNodes[i]->poss_times.PrintTimes();
-    // }
 
     std::vector<float> velocities;
     std::vector<std::shared_ptr<graph_node>> path;
     float curVel;
     std::shared_ptr<graph_node> new_goal = goal_node;
     path.insert(path.begin(), new_goal);
+    Route route;
     rclcpp::Time t_finish = goal_node->getPossTimes().getTime(0).first;
-
-    //printf("T_finish before while: %f\n", t_finish.seconds());
+    route.time_finish = t_finish;
 
     while (new_goal != shared_from_this()) {
         new_goal = GetRightNeighbour(new_goal, allNodes, curVel, t_finish, t_finish, Vmin, Vmax);
@@ -216,18 +196,9 @@ Route graph_node::GenRouteTo(std::shared_ptr<graph_node>& goal_node,
         path.insert(path.begin(), new_goal);
     }
 
-    //printf("After while\n");
-
-    Route route;
     route.route = path;
     route.velocities = velocities;
     route.time_start = t_finish;
-
-    // RCLCPP_INFO(rclcpp::get_logger("my_logger"), "path1: %s->%s->%s\n", route.route[0]->getName().c_str(),
-    // route.route[1]->getName().c_str(), route.route[2]->getName().c_str());
-    // RCLCPP_INFO(rclcpp::get_logger("my_logger"), "vel1: 1->2: %f; 2->3: %f\n", route.velocities[0],
-    // route.velocities[1]);
-    // RCLCPP_INFO(rclcpp::get_logger("my_logger"), "t1: %f\n", route.time_start.seconds());
 
     UpdateTimetables(route);
     ClearTimeValues(allNodes);
