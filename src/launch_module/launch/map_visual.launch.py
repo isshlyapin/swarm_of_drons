@@ -6,17 +6,23 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    map_file = '/workspaces/swarm_of_drons/src/map_visual/map.csv'
+    map_file_arg = DeclareLaunchArgument(
+        'map_file',
+        default_value=TextSubstitution(
+            text='/workspaces/swarm_of_drons/test/test2/map.csv'
+        )
+    )
 
     map_node = Node(
         package='map_visual',
         executable='map_publisher_node',
         parameters=[{
-            'use_sime_time': True
-        }],
-        arguments=[map_file]
+            'use_sime_time': True,
+            'map_file': LaunchConfiguration('map_file')
+        }]
     )
 
     return LaunchDescription([
+        map_file_arg,
         map_node
     ])

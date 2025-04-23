@@ -14,7 +14,7 @@
 #include "drone_interfaces/msg/global_mission.hpp"
 #include "navigator_interfaces/srv/free_drone.hpp"
 
-#include "drone.hpp"
+#include "drone_composition/drone.hpp"
 
 namespace DroneComposition {
 

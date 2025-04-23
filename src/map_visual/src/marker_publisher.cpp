@@ -1,95 +1,108 @@
-#include "../include/csv.hpp"
+#include <fastcsv/csv.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <visualization_msgs/msg/marker.hpp>
 
-#include <chrono>
-#include <memory>
-#include <string>
-#include <unordered_map>
+#include "marker_publisher.hpp"
 
 using namespace std::chrono_literals;
 
-struct Point {
-    double x;
-    double y;
-    double z;
-};
+MarkerPublisher::MarkerPublisher()
+: Node("marker_publisher")
+{
+    declare_parameter("drone_ports_qos", 25);
+    declare_parameter("control_points_qos", 25);
 
-class MarkerPublisher : public rclcpp::Node {
-  public:
-    MarkerPublisher(const std::string &csv_path)
-        : Node("marker_publisher"), csv_path_(csv_path) {
-        publisher_dn_ = this->create_publisher<visualization_msgs::msg::Marker>(
-            "/drone_ports", 10);
-        publisher_pm_ = this->create_publisher<visualization_msgs::msg::Marker>(
-            "/control_points", 10);
-        timer_ = this->create_wall_timer(
-            1s, std::bind(&MarkerPublisher::publishMarkers, this));
-        loadCsv();
-    }
+    declare_parameter("map_file", "");
 
-  private:
-    void loadCsv() {
-        try {
-            io::CSVReader<4> reader(csv_path_);
-            reader.read_header(io::ignore_extra_column, "index", "x", "y", "z");
-            std::string index;
-            double x, y, z;
-            while (reader.read_row(index, x, y, z)) {
-                data_[index] = Point{x, y, z};
-            }
-            RCLCPP_INFO(get_logger(), "Loaded %zu entries from CSV",
-                        data_.size());
-        } catch (const std::exception &e) {
-            RCLCPP_ERROR(get_logger(), "Failed to load CSV: %s", e.what());
+    communicationInit();
+
+    mapInit();
+}
+
+void MarkerPublisher::communicationInit() {
+    int drone_ports_qos = get_parameter("drone_ports_qos").as_int();
+    int control_points_qos = get_parameter("control_points_qos").as_int();
+
+    dronePortsPublisher = this->create_publisher<MsgMarkerT>(
+        getDronePortsTopic(), 
+        drone_ports_qos
+    );
+    controlPointsPublisher = this->create_publisher<MsgMarkerT>(
+        getControlPointsTopic(), 
+        control_points_qos
+    );
+    timer_ = this->create_wall_timer(
+        10s,
+        [this]() {
+            this->publishMarkers();
         }
+    );
+}
+
+void MarkerPublisher::mapInit() {
+    std::string csv_path_ = get_parameter("map_file").as_string();
+    if (csv_path_.empty()) {
+        RCLCPP_ERROR(get_logger(), "Map file path is empty");
+        throw rclcpp::exceptions::InvalidParameterValueException(
+            "Map file path is empty"
+        );
     }
 
-    void publishMarkers() {
-        rclcpp::Time now = this->now();
-        int id = 0;
+    io::CSVReader<4> reader(csv_path_);
+    reader.read_header(io::ignore_extra_column, "index", "x", "y", "z");
+    std::string index;
+    double x, y, z;
+    while (reader.read_row(index, x, y, z)) {
+        markers.push_back(createMarker(index, Point{x, y, z}));
+    }
+    RCLCPP_INFO(get_logger(), "Loaded %zu entries from CSV", markers.size());
+}
 
-        for (const auto &[key, point] : data_) {
-            visualization_msgs::msg::Marker marker;
-            marker.header.frame_id = "map";
-            marker.header.stamp = now;
-            marker.ns = key[0] == 'd' ? "drone_ports" : "control_points";
-            marker.id = id++;
-            marker.action = visualization_msgs::msg::Marker::ADD;
-            marker.pose.position.x = point.x;
-            marker.pose.position.y = point.y;
-            marker.pose.position.z = point.z;
-            marker.pose.orientation.w = 1.0;
+MarkerPublisher::MsgMarkerT MarkerPublisher::createMarker(const std::string &index, const Point &point) {
+    MsgMarkerT marker;
+    marker.header.frame_id = "map";
+    marker.header.stamp = this->now();
+    marker.ns = index[0] == 'd' ? "drone_ports" : "control_points";
+    marker.id = std::stoi(index.substr(1));
+    marker.action = MsgMarkerT::ADD;
+    marker.lifetime = rclcpp::Duration(0, 0);
+    marker.pose.position.x = point.x();
+    marker.pose.position.y = point.y();
+    marker.pose.position.z = point.z();
 
-            if (key[0] == 'd') {
-                marker.type = visualization_msgs::msg::Marker::CUBE;
-                marker.scale.x = 10.0;
-                marker.scale.y = 10.0;
-                marker.scale.z = 5.0;
-                marker.color.r = 0.0f;
-                marker.color.g = 0.0f;
-                marker.color.b = 1.0f;
-                marker.color.a = 0.8f;
-                publisher_dn_->publish(marker);
-            } else if (key[0] == 'p') {
-                marker.type = visualization_msgs::msg::Marker::CYLINDER;
-                marker.scale.x = 10.0;
-                marker.scale.y = 10.0;
-                marker.scale.z = 5.0;
-                marker.color.r = 0.0f;
-                marker.color.g = 1.0f;
-                marker.color.b = 0.0f;
-                marker.color.a = 0.8f;
-                publisher_pm_->publish(marker);
-            }
-        }
+    if (index[0] == 'd') {
+        marker.type = MsgMarkerT::CUBE;
+        marker.scale.x = 10.0;
+        marker.scale.y = 10.0;
+        marker.scale.z = 5.0;
+        marker.color.r = 0.0f;
+        marker.color.g = 0.0f;
+        marker.color.b = 1.0f;
+        marker.color.a = 0.8f;
+    } else if (index[0] == 'p') {
+        marker.type = MsgMarkerT::CYLINDER;
+        marker.scale.x = 10.0;
+        marker.scale.y = 10.0;
+        marker.scale.z = 5.0;
+        marker.color.r = 0.0f;
+        marker.color.g = 1.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 0.8f;
+    } else {
+        RCLCPP_ERROR(get_logger(), "Unknown marker type: %s", index.c_str());
     }
 
-  private:
-    std::string csv_path_;
-    std::unordered_map<std::string, Point> data_;
+    return marker;
+}
 
-    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_dn_;
-    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_pm_;
-    rclcpp::TimerBase::SharedPtr timer_;
-};
+void MarkerPublisher::publishMarkers() {
+    rclcpp::Time now = this->now();
+
+    for (auto &marker : markers) {
+        marker.header.stamp = now;
+        if (marker.ns == "drone_ports") {
+            dronePortsPublisher->publish(marker);
+        } else if (marker.ns == "control_points") {
+            controlPointsPublisher->publish(marker);
+        }        
+    }
+}

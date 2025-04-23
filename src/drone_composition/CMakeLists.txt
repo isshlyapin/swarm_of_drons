@@ -5,7 +5,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
+# === find dependencies ===
 find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -22,13 +22,16 @@ find_package(magic_enum CONFIG REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-include_directories(include)
-
 set(node_plugins "")
 
-# Description drone component
+# === Drone component ===
 add_library(drone SHARED
     src/drone.cpp
+)
+target_include_directories(drone 
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 target_compile_definitions(drone
     PRIVATE "COMPOSITION_BUILDING_DLL"
@@ -46,9 +49,14 @@ target_link_libraries(drone
 rclcpp_components_register_nodes(drone "DroneComposition::Drone")
 set(node_plugins "${node_plugins}DroneComposition::Drone;$<TARGET_FILE:drone>\n")
 
-# Description drone controller component
+
+# === Drone controller component ===
 add_library(drone_controller SHARED
     src/drone_controller.cpp
+)
+target_include_directories(drone_controller PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 target_compile_definitions(drone_controller
     PRIVATE "COMPOSITION_BUILDING_DLL"
@@ -72,11 +80,37 @@ rclcpp_components_register_nodes(drone_controller "DroneComposition::DroneContro
 set(node_plugins "${node_plugins}DroneComposition::DroneController;$<TARGET_FILE:drone_controller>\n")
 
 
-install(TARGETS
-  drone
-  drone_controller
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+# === Install and Export ===
+ament_export_targets(export_drone HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+    rclcpp
+    Eigen3
+    nav_msgs
+    drone_interfaces
+    rclcpp_components
+)
+
+install(
+    TARGETS drone
+    EXPORT export_drone
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+install(
+    TARGETS drone_controller
+    EXPORT export_drone_controller
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+install(
+    DIRECTORY include/
+    DESTINATION include
+)
 
 ament_package()

@@ -5,8 +5,8 @@
 #include <fastcsv/csv.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include "drone_controller.hpp"
-#include "drone.hpp"
+#include "drone_composition/drone_controller.hpp"
+#include "drone_composition/drone.hpp"
 
 namespace DroneComposition {
 

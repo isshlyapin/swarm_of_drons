@@ -1,7 +1,7 @@
 #include <magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include "drone.hpp"
+#include "drone_composition/drone.hpp"
 
 namespace DroneComposition {
 

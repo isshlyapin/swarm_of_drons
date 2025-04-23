@@ -2,18 +2,20 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>drones_visualization</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="shlyapin2005@gmail.com">root</maintainer>
-  <license>TODO: License declaration</license>
+  <version>0.1.0</version>
+  <description>Module for visualization drones fly</description>
+  <maintainer email="shlyapin2005@gmail.com">isshlyapin</maintainer>
+  <license>MIT</license>
 
   <depend>rclcpp</depend>
-  <depend>visualization_msgs</depend>
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
-  <depend>geometry_msgs</depend>
   <depend>magic_enum</depend>
+  <depend>data_utils</depend>
+  <depend>geometry_msgs</depend>
   <depend>drone_interfaces</depend>
+  <depend>drone_composition</depend>
+  <depend>visualization_msgs</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
