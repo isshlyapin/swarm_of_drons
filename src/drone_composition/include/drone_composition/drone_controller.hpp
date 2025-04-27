@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <rclcpp/callback_group.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -133,6 +134,7 @@ private:
     
     rclcpp::Service<SrvFreeDroneT>::SharedPtr freeDroneService;
     rclcpp::Subscription<MsgGlobalMissionT>::SharedPtr globalMissionSubscription;
+    rclcpp::CallbackGroup::SharedPtr freeDroneSrvCallbackGroup;
 };
 
 } // namespace DroneComposition

@@ -97,9 +97,9 @@ void Drone::flight(Point targetPoint, Vector3 velocity) {
         currentPosition = newPos;
         curDistance     = newDistance;
 
-        newPos.x() += velocity.x() * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
-        newPos.y() += velocity.y() * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
-        newPos.z() += velocity.z() * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
+        newPos.x() += velocity.x() * (dTime.seconds());
+        newPos.y() += velocity.y() * (dTime.seconds());
+        newPos.z() += velocity.z() * (dTime.seconds());
         
         newDistance = (targetPoint - newPos).squaredNorm();
 

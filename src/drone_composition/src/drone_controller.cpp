@@ -1,4 +1,6 @@
 #include <memory>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 #include <vector>
 
 #include <magic_enum.hpp>
@@ -38,13 +40,17 @@ void DroneController::communicationInit() {
         }
     );
 
-    RCLCPP_INFO(this->get_logger(), "DroneController: Free drone service init");    
+    RCLCPP_INFO(this->get_logger(), "DroneController: Free drone service init");
+    freeDroneSrvCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  
     freeDroneService = this->create_service<SrvFreeDroneT>(
         "free_drone_service",
         [this](const std::shared_ptr<SrvFreeDroneRequestT> request,
                      std::shared_ptr<SrvFreeDroneResponseT> response) {
             this->freeDroneSrvHandler(request, response);
-        }
+        },
+        10,
+        freeDroneSrvCallbackGroup
     );
 }
 
@@ -99,6 +105,7 @@ void DroneController::addDroneContext(int id, const std::string& model,
         Drone::getReportTopic(contextPtr->getFullName()),
         this->get_parameter("drone_rep_qos").as_int(),
         [this](const Drone::MsgReportPtrT msg) {
+            RCLCPP_INFO(this->get_logger(), "DroneController: In report lambda");
             this->reportHandler(msg);
         }
     );
@@ -118,6 +125,7 @@ void DroneController::freeDroneSrvHandler (
     const std::shared_ptr<SrvFreeDroneRequestT> request,
           std::shared_ptr<SrvFreeDroneResponseT> response )
 {
+    RCLCPP_INFO(this->get_logger(), "DroneController: Start find free drones");
     std::vector<std::shared_ptr<DroneContext>> freeDrones;
     findFreeDrones(freeDrones);
     
@@ -214,6 +222,7 @@ void DroneController::globalMissionHandler(const MsgGlobalMissionPtrT msg) {
 
 void DroneController::reportHandler(const Drone::MsgReportPtrT msg) {
     if (drones.find(msg->id) == drones.end()) {
+        RCLCPP_INFO(this->get_logger(), "DroneController: Report message for unknown drone");
         return;
     }
 

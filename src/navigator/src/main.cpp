@@ -1,11 +1,13 @@
 #include <memory>
 #include <string>
 
+
+#include "../include/time_table.hpp"
 #include "../include/interface.hpp"
 #include <rclcpp/rclcpp.hpp>
 
-#define absoluteVmin 10
-#define absoluteVmax 40
+#define absoluteVmin 5
+#define absoluteVmax 10
 
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);

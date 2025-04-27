@@ -1,11 +1,12 @@
 Panels:
   - Class: rviz_common/Displays
-    Help Height: 90
+    Help Height: 138
     Name: Displays
     Property Tree Widget:
       Expanded:
         - /Global Options1
         - /Status1
+
         - /DronePorts1/Topic1
         - /ControlPoints1/Topic1
       Splitter Ratio: 0.5
