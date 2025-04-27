@@ -14,7 +14,7 @@ Drone::Drone(const rclcpp::NodeOptions & options)
 
     RCLCPP_INFO(this->get_logger(), "Drone %s: Created", realName.c_str());
 
-    declare_parameter("flight_rate", 500.0);
+    declare_parameter("flight_rate", 50.0);
     declare_parameter("qos_report_publisher", 25);
     declare_parameter("qos_odometry_publisher", 100);
     declare_parameter("qos_mission_subscription", 10);
@@ -97,9 +97,9 @@ void Drone::flight(Point targetPoint, Vector3 velocity) {
         currentPosition = newPos;
         curDistance     = newDistance;
 
-        newPos.x() += velocity.x() * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
-        newPos.y() += velocity.y() * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
-        newPos.z() += velocity.z() * (dTime.seconds() + 1e-9 * dTime.nanoseconds());
+        newPos.x() += velocity.x() * (dTime.seconds());
+        newPos.y() += velocity.y() * (dTime.seconds());
+        newPos.z() += velocity.z() * (dTime.seconds());
         
         newDistance = (targetPoint - newPos).squaredNorm();
 

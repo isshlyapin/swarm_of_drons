@@ -1,6 +1,8 @@
+#include <cassert>
 #include <cstddef>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/utilities.hpp>
 #include <vector>
 #include <utility>
 #include <memory>
@@ -15,6 +17,7 @@
 
 bool graph_node::CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node,
                        std::shared_ptr<edge>& edge, double Vmin, double Vmax) {
+
     TimeTable new_poss;
     TimeTable PossToDep = poss_times;
     PossToDep -= edge->getTimes();
@@ -59,11 +62,42 @@ bool graph_node::CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node,
         }
     }
 
-    if (new_poss != node->poss_times) {
-        node->AddPossTimes(new_poss);
+    new_poss -= node->getTimes();
+    TimeTable old_poss_times = node->getPossTimes();
+    node->AddPossTimes(new_poss);
+
+    if (old_poss_times != node->getPossTimes()) {
         return true;
     }
     return false;
+}
+
+bool graph_node::canGoToThisEdge(TimeTable& edgestime, rclcpp::Time& Tmin, rclcpp::Time Tmax, rclcpp::Time t_finish) {
+    bool changes = true;
+    for (size_t i = 0; i < edgestime.getSize(); i++) {
+
+        if ( TimeTable::isFirstTimeBigger(t_finish, edgestime.getTime(i).first) &&
+             TimeTable::isFirstTimeBigger(edgestime.getTime(i).first, Tmax) ) {
+
+            changes = false;
+            
+        } else if ( TimeTable::isFirstBiggerOrEq(t_finish, edgestime.getTime(i).second) &&
+                    TimeTable::isFirstTimeBigger(edgestime.getTime(i).second, Tmax) ) {
+
+            changes = false; 
+
+        } else if ( TimeTable::isFirstBiggerOrEq(Tmax, edgestime.getTime(i).first) &&
+                    TimeTable::isFirstBiggerOrEq(edgestime.getTime(i).second, t_finish)) {
+
+            changes = false; 
+
+        } else if ( TimeTable::isFirstTimeBigger(t_finish, edgestime.getTime(i).first) &&
+                    TimeTable::isFirstBiggerOrEq(edgestime.getTime(i).second, Tmin) ) {
+
+            Tmin = edgestime.getTime(i).second;
+        }
+    }
+    return changes;
 }
 
 bool graph_node::CanGoToThisNeighbour(std::shared_ptr<graph_node>& node, size_t numberNeighbour,
@@ -77,21 +111,7 @@ bool graph_node::CanGoToThisNeighbour(std::shared_ptr<graph_node>& node, size_t 
 
     TimeTable edgestime = ((node->getEdges())[numberNeighbour])->getTimes();
 
-    for (size_t i = 0; i < edgestime.getSize(); i++) {
-
-        if ( TimeTable::isFirstTimeBigger(t_finish, edgestime.getTime(i).first) &&
-             TimeTable::isFirstTimeBigger(edgestime.getTime(i).second, Tmax) ) {
-
-            RCLCPP_INFO(rclcpp::get_logger("graph"), 
-                "Cannot go to this route because edge is busy");
-            return false;
-
-        } else if ( TimeTable::isFirstTimeBigger(t_finish, edgestime.getTime(i).first) &&
-                    TimeTable::isFirstBiggerOrEq(edgestime.getTime(i).second, Tmin) ) {
-
-            Tmin = edgestime.getTime(i).second;
-        }
-    }
+    if (!canGoToThisEdge(edgestime, Tmin, Tmax, t_finish)) return false;
                     
     for (size_t j = 0; j < (node->getPossTimes()).getSize(); j++) {
         if (TimeTable::isFirstBiggerOrEq((node->getPossTimes()).getTime(j).second, Tmin) &&
@@ -109,8 +129,6 @@ bool graph_node::CanGoToThisNeighbour(std::shared_ptr<graph_node>& node, size_t 
             return true;
         }
     }
-    RCLCPP_INFO(rclcpp::get_logger("graph"), 
-                "Cannot go to this route time of this node does not allow");
     return false;
 }
 
@@ -129,18 +147,15 @@ std::shared_ptr<graph_node>& graph_node::GetRightNeighbour(std::shared_ptr<graph
             }
         }
 
-        if (isNeighbour) {
-            RCLCPP_INFO(rclcpp::get_logger("graph"), 
-                "Trying to generate route from: %s to: %s", 
-                allNodes[i]->getName().c_str(), goal->getName().c_str());
+        if (isNeighbour && ( ( !allNodes[i]->getDronport() ) || 
+                                allNodes[i] == shared_from_this())) {
             if ( CanGoToThisNeighbour(allNodes[i], numberOfNeighbour, vel, t_finish, t_start, Vmin, Vmax) ) {
-                RCLCPP_INFO(rclcpp::get_logger("graph"), 
-                    "Go from: %s to: %s", goal->getName().c_str(), allNodes[i]->getName().c_str());
                 return allNodes[i];
             }
         }
     }
     RCLCPP_ERROR(rclcpp::get_logger("graph"), "No right neighbour");
+    std::exit(EXIT_FAILURE); 
     return allNodes[0];
 }
 
@@ -184,16 +199,15 @@ void graph_node::UpdateTimetables(Route& route) {
 
         rclcpp::Time t1 = curTime + (TimeTable::TimeFloatToRCL(
             ( (route.route[i])->getEdges() )[numCurEdge]->Length() / route.velocities[i]) - zerotime);
-        std::pair<rclcpp::Time, rclcpp::Time> time = {curTime, t1};
+        std::pair<rclcpp::Time, rclcpp::Time> time = {curTime, t1 + (Tdelay - zerotime)};
+        ( (route.route[i])->getEdges() )[numCurEdge]->AddTime(time);
 
         if (i != 0) {
             time = {TimeTable::TimeFloatToRCL(
                 ((prevTime + (curTime - zerotime)).seconds() ) / 2),
             TimeTable::TimeFloatToRCL(
-                ((curTime  + (t1      - zerotime)).seconds() ) / 2)
+                ((curTime  + (t1      - zerotime)).seconds() ) / 2) + (Tdelay - zerotime)
             };
-            RCLCPP_INFO(rclcpp::get_logger("graph"), "Add time to timetable node [%f, %f]",
-                                            time.first.seconds(), time.second.seconds());
             (route.route[i])->AddTime(time);
         }
         prevTime = curTime; curTime = t1;
@@ -208,18 +222,13 @@ Route graph_node::GenRouteTo(std::shared_ptr<graph_node>& goal_node,
         RCLCPP_ERROR(rclcpp::get_logger("graph"), "Not sim time in GenRouteTo");
     }
 
+    ClearTimeValues(allNodes, t_start);
+
     std::pair<rclcpp::Time, rclcpp::Time> start_time = {t_start, TimeTable::TimeFloatToRCL(-1)};
     poss_times.AppendTime(start_time);
     std::vector<std::shared_ptr<graph_node>> involved_nodes;
 
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Start generated all poss_times");
     CalcAllPossTimes(Vmin, Vmax, involved_nodes);
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Generated all poss_times:");
-
-    for (size_t i = 0; i < allNodes.size(); i++) {
-        RCLCPP_INFO(rclcpp::get_logger("graph"), "node %s:", allNodes[i]->getName().c_str());
-        allNodes[i]->getPossTimes().PrintTimes();
-    }
 
     std::vector<double> velocities;
     std::vector<std::shared_ptr<graph_node>> path;
@@ -228,36 +237,33 @@ Route graph_node::GenRouteTo(std::shared_ptr<graph_node>& goal_node,
     path.insert(path.begin(), new_goal);
     Route route;
     rclcpp::Time t_finish = goal_node->getPossTimes().getTime(0).first;
+    rclcpp::Time old_t_finish = goal_node->getPossTimes().getTime(0).first;
+    std::shared_ptr<graph_node> old_goal;
     route.time_finish = t_finish;
 
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Starting generate route");
+    std::vector<rclcpp::Time> times;
+    times.push_back(t_finish);
 
     while (new_goal != shared_from_this()) {
+        old_t_finish = t_finish; old_goal = new_goal;
+
         new_goal = GetRightNeighbour(new_goal, allNodes, curVel, t_finish, t_finish, Vmin, Vmax);
         velocities.insert(velocities.begin(), curVel);
         path.insert(path.begin(), new_goal);
     }
 
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Ending generate route");
-
     route.route = path;
     route.velocities = velocities;
     route.time_start = t_finish;
 
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Updating timetables");
-
     UpdateTimetables(route);
-
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Clearing poss_times");
-
-    ClearTimeValues(allNodes);
-
-    RCLCPP_INFO(rclcpp::get_logger("graph"), "Returning routes");
-
+    ClearTimeValues(allNodes, t_start);
     return route;
 }
 
-void graph_node::ClearTimeValues(std::vector<std::shared_ptr<graph_node>>& allNodes) {
+void graph_node::ClearTimeValues(std::vector<std::shared_ptr<graph_node>>& allNodes, rclcpp::Time t_start) {
+    std::pair<rclcpp::Time, rclcpp::Time> timepair = {TimeTable::TimeFloatToRCL(0), t_start};
+
     for (size_t i = 0; i < allNodes.size(); i++) {
         allNodes[i]->ClearPossTimes();
         allNodes[i]->refCurDepRec();

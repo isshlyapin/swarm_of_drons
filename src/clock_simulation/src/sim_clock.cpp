@@ -62,8 +62,7 @@ private:
             last_real_time_ = current_real_time;
 
             // Рассчитываем симулированное время с учетом масштаба
-            double dtime = elapsed_real_time.seconds() +
-                           elapsed_real_time.nanoseconds() * 1e-9;
+            double dtime = elapsed_real_time.seconds();
 
             double sim_dtime = dtime * time_scale_;
 

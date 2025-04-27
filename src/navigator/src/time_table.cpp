@@ -72,13 +72,14 @@ void TimeTable::DeleteTime(const std::pair<rclcpp::Time, rclcpp::Time>& time) {
         } else if ( isFirstTimeBigger(time.first, times[i1].first) &&
                     isFirstBiggerOrEq(time.second, times[i1].second)) {
             times[i1].second = time.first;
-        } else if ( isFirstTimeBigger(times[i1].second, time.second) ) {
+        } else if ( isFirstTimeBigger(time.second, times[i1].first) &&
+                    isFirstTimeBigger(times[i1].second, time.second)) {
             times[i1].first = time.second;
         } else {
             times.erase(times.begin() + i1);
         }
     }
-    else if (i2 - 1 > i1) {
+    else if (i2 > 0 && i2 - 1 > i1) {
         if ( isFirstTimeBigger(time.first, times[i1].first)) {
             times[i1].second = time.first;
             i1++;
@@ -88,7 +89,7 @@ void TimeTable::DeleteTime(const std::pair<rclcpp::Time, rclcpp::Time>& time) {
             i2--;
         }
         if (i2 >= i1) {
-            times.erase(times.begin() + i1, times.begin() + i2 + 1);
+            times.erase(times.begin() + i1, times.begin() + i2);
         }
     }
 }
@@ -180,4 +181,21 @@ bool TimeTable::isTimesEqual(const rclcpp::Time& time1, const rclcpp::Time& time
 
 bool TimeTable::isFirstBiggerOrEq(const rclcpp::Time& time1, const rclcpp::Time& time2) {
     return (isFirstTimeBigger(time1, time2) || isTimesEqual(time1, time2));
+}
+
+bool TimeTable::isTimeIn(rclcpp::Time time) {
+    for (size_t i = 0; i < times.size(); i++) {
+        if ( isFirstTimeBigger(time, times[i].first) && 
+                isFirstTimeBigger(times[i].second, time)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TimeTable::checkCollisions(std::pair<rclcpp::Time, rclcpp::Time> time) {
+    TimeTable news = *this;
+    news.DeleteTime(time);
+    if (this->getTimes() == news.getTimes()) return false;
+    return true;
 }
