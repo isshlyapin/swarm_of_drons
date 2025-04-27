@@ -149,7 +149,7 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
     }
 
     rclcpp::Clock clock(RCL_ROS_TIME);
-    rclcpp::Duration Tdelay = rclcpp::Duration(1, 0);
+    rclcpp::Duration Tdelay = rclcpp::Duration(10, 0);
     rclcpp::Time Tstart = this->now() + Tdelay;
 
     RCLCPP_INFO(this->get_logger(), 
