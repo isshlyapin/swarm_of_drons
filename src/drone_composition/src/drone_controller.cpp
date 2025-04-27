@@ -1,6 +1,4 @@
 #include <memory>
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
 #include <vector>
 
 #include <magic_enum.hpp>
@@ -105,7 +103,6 @@ void DroneController::addDroneContext(int id, const std::string& model,
         Drone::getReportTopic(contextPtr->getFullName()),
         this->get_parameter("drone_rep_qos").as_int(),
         [this](const Drone::MsgReportPtrT msg) {
-            RCLCPP_INFO(this->get_logger(), "DroneController: In report lambda");
             this->reportHandler(msg);
         }
     );
