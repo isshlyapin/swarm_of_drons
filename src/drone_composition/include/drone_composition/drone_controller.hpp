@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <rclcpp/callback_group.hpp>
 #include <string>
 #include <thread>
 #include <vector>
