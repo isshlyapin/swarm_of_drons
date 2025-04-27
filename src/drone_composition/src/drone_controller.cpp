@@ -1,6 +1,4 @@
 #include <memory>
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
 #include <vector>
 
 #include <magic_enum.hpp>
