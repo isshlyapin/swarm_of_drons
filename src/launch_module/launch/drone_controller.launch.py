@@ -8,7 +8,7 @@ def generate_launch_description():
     drones_file = DeclareLaunchArgument(
         'drones_file', 
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/test/test1/drones.csv'
+            text='/workspaces/swarm_of_drons/tests/test1/drones.csv'
         )
     )
 
