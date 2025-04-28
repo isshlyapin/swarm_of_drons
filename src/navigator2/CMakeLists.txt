@@ -16,12 +16,14 @@ find_package(geometry_msgs REQUIRED)
 find_package(data_utils REQUIRED)
 find_package(drone_interfaces REQUIRED)
 find_package(navigator_interfaces REQUIRED)
+
 add_executable(navigator2
     src/main.cpp
 )
 
 target_include_directories(navigator2 PUBLIC
-    ${CMAKE_SOURCE_DIR}/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 ament_target_dependencies(navigator2
@@ -45,16 +47,21 @@ install(TARGETS
 #   # Тесты для Vertex
 #   ament_add_gtest(test_vertex test/test1.cpp)
 #   ament_target_dependencies(test_vertex
+#     rclcpp
+#     geometry_msgs
+#     data_utils
+#     drone_interfaces
+#     navigator_interfaces
 #     Eigen3
 # )
 # #   target_link_libraries(test_vertex navigator2)
 #   target_include_directories(test_vertex PRIVATE include)
 
-# #   # Тесты для Path
-# #   ament_add_gtest(test_path test/test_path.cpp)
-# #   target_link_libraries(test_path your_package)
+#   # Тесты для Path
+#   ament_add_gtest(test_path test/test_path.cpp)
+#   target_link_libraries(test_path your_package)
   
-#   # Аналогично для других тестов...
+  # Аналогично для других тестов...
 # endif()
 
 # if(BUILD_TESTING)

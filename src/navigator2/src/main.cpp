@@ -102,15 +102,19 @@ public:
         RCLCPP_INFO(this->get_logger(), "Drone vertex id: %s", drone_vertex_id.c_str());
         Drone drone{
             drone_vertex_id,
-            10.0, 8.0,
-            this->now().seconds() + 15
+            DroneVMax{10.0}, DroneVMin{8.0},
+            DroneFreeTime{this->now().seconds() + 15}
         };
+        
         if (drone_vertex_id != mission.first) {
             auto mission1 = map.generateMission(drone_vertex_id, mission.first, drone, OptimalPathMode::MIN_DISTANCE);
 
             drone_interfaces::msg::GlobalMission msg1;
             msg1.drone_id = response->id;
-            msg1.start_time.sec = mission1.timeStart;
+            msg1.start_time.sec = static_cast<int>(mission1.timeStart);
+            msg1.start_time.nanosec = static_cast<int>(
+                (mission1.timeStart - msg1.start_time.sec) * 1e9
+            );
             for (size_t i = 0; i < mission1.vertexes.size() - 1; ++i) {
                 Vertex::Point point = map.getVertexPosition(mission1.vertexes[i+1]);
                 geometry_msgs::msg::Pose pose;
@@ -120,7 +124,7 @@ public:
                 msg1.poses.push_back(pose);
                 msg1.velocities.push_back(mission1.velocities[i]);
             }
-            drone.setFreeTime(mission1.timeFinish + 15);
+            drone.setFreeTime(mission1.timeFinish + 5);
             Globalpublisher_->publish(msg1);
         }
 
@@ -128,8 +132,10 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "MissionMsg2 field start");
         drone_interfaces::msg::GlobalMission msg2;
-        msg2.drone_id = response->id;
-        msg2.start_time.sec = mission2.timeStart;
+        msg2.start_time.sec = static_cast<int>(mission2.timeStart);
+        msg2.start_time.nanosec = static_cast<int>(
+            (mission2.timeStart - msg2.start_time.sec) * 1e9
+        );
         RCLCPP_INFO(this->get_logger(), "MissionMsg2 field poses and velocities");
         for (size_t i = 1; i < mission2.vertexes.size(); ++i) {
             Vertex::Point point = map.getVertexPosition(mission2.vertexes[i]);

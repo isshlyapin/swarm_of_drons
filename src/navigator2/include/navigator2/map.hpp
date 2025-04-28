@@ -7,6 +7,7 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 
@@ -14,7 +15,9 @@
 
 #include <Eigen/Geometry>
 
-enum class OptimalPathMode {
+#include "navigator2/config.hpp"
+
+enum class OptimalPathMode : std::uint8_t {
     MIN_DISTANCE = 0
 };
 
@@ -22,20 +25,19 @@ class Vertex {
 public:
     using Point = Eigen::Vector3d;
 
-    Vertex(const std::string& id, const Point& position)
-        : id(id), position(position) {}
-
+    Vertex(std::string vertexId, Point position)
+        : id(std::move(vertexId)), position(std::move(position)) {}
 
     const std::string& getId() const { return id; }
     const Point& getPosition() const { return position; }
 
     void addNeighbor(const std::shared_ptr<Vertex>& neighbor, double timeOpen = 0.0) {
-        neighbors.push_back(neighbor);
-        lengths[neighbor->getId()] = (neighbor->getPosition() - position).norm();
+        neighbors[neighbor->getId()] = neighbor;
+        lengths[neighbor->getId()]   = (neighbor->getPosition() - position).norm();
         timesOpen[neighbor->getId()] = timeOpen;
     }
 
-    const std::vector<std::shared_ptr<Vertex>>& getNeighbors() const {
+    const std::unordered_map<std::string, std::shared_ptr<Vertex>>& getNeighbors() const {
         return neighbors;
     }
 
@@ -47,44 +49,47 @@ public:
         return !neighbors.empty();
     }
 
-    double getLength(const std::string& id) const {
+    double getLength(const std::string& vertexId) const {
         assert(lengths.find(id) != lengths.end());
-        return lengths.at(id);
+        return lengths.at(vertexId);
     }
 
-    double getTimeOpen(const std::string& id) const {
-        RCLCPP_INFO(rclcpp::get_logger("Vertex"), "getTimeOpen from: %s, to: %s", this->id.c_str(), id.c_str());
+    double getTimeOpen(const std::string& vertexId) const {
         assert(timesOpen.find(id) != timesOpen.end());
-        return timesOpen.at(id);
+        return timesOpen.at(vertexId);
     }
 
-    void setTimeOpen(const std::string& id, double timeOpen) {
+    void setTimeOpen(const std::string& vertexId, double timeOpen) {
         assert(timesOpen.find(id) != timesOpen.end());
-        timesOpen[id] = timeOpen;
+        timesOpen[vertexId] = timeOpen;
     }
 
 private:
     std::string id;
     Point position;
-    std::vector<std::shared_ptr<Vertex>> neighbors;
     std::unordered_map<std::string, double> lengths;
     std::unordered_map<std::string, double> timesOpen;
+    std::unordered_map<std::string, std::shared_ptr<Vertex>> neighbors;
 };
 
 struct Path {
-    bool isNotInPath(const std::string& id) const {
-        return visited.find(id) == visited.end();
+    [[nodiscard]] bool isNotInPath(const std::string& vertexId) const {
+        return visited.find(vertexId) == visited.end();
     }
 
-    bool isEmpty() const {
+    [[nodiscard]] bool isEmpty() const {
         return vertexes.empty();
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return vertexes.size();
     }
 
-    double getDistance() const {
+    [[nodiscard]] double getDistance() const {
+        if (size() < 2) {
+            return 0.0;
+        }
+        
         double distance = 0.0;
         for (size_t i = 1; i < vertexes.size(); ++i) {
             distance += vertexes[i-1]->getLength(vertexes[i]->getId());
@@ -92,90 +97,132 @@ struct Path {
         return distance;
     }
 
+    [[nodiscard]] const std::shared_ptr<Vertex>& operator[](size_t index) const {
+        assert(index < vertexes.size());
+        return vertexes[index];
+    }
+
+    [[nodiscard]] const std::shared_ptr<Vertex>& back() const {
+        assert(!vertexes.empty());
+        return vertexes.back();
+    }
+    [[nodiscard]] const std::shared_ptr<Vertex>& front() const {
+        assert(!vertexes.empty());
+        return vertexes.front();
+    }
+
+    [[nodiscard]] bool operator==(const Path& other) const {
+        return vertexes == other.vertexes;
+    }
+
     void addVertex(const std::shared_ptr<Vertex>& vertex) {
         visited.insert(vertex->getId());
         vertexes.push_back(vertex);
     }
 
+private:
     std::set<std::string> visited;
     std::vector<std::shared_ptr<Vertex>> vertexes;
 };
 
 struct Mission {
-    double timeStart;
-    double timeFinish;
+    double timeStart{};
+    double timeFinish{};
     std::vector<double> velocities;
     std::vector<std::string> vertexes;
 };
 
+struct DroneVMax {
+    double value;
+};
+
+struct DroneVMin {
+    double value;
+};
+
+struct DroneFreeTime {
+    double value;
+};
+
+struct DroneVOptimal {
+    double value;
+};
+
 class Drone {
 public:
-    Drone(const std::string& vertex_id, double vmax, double vmin, double free_time)
-    : vmax(vmax), vmin(vmin), freeTime(free_time) , vertexId(vertex_id) {
-        assert(vmax > vmin);
-        assert(vmin > 0);
-
+    Drone(std::string vertex_id, DroneVMax vmax, DroneVMin vmin, DroneFreeTime free_time)
+    : vertexId(std::move(vertex_id)), 
+      vmax(vmax),
+      vmin(vmin),
+      freeTime(free_time)
+    {
         initVoptimal();
     }
 
-    double getVmax() const { return vmax; }
-    double getVmin() const { return vmin; }
-    double getVoptimal() const { return voptimal; }
+    Drone(Drone&&)                 = default;
+    virtual ~Drone()               = default;
+    Drone(const Drone&)            = default;
+    Drone& operator=(Drone&&)      = default;
+    Drone& operator=(const Drone&) = default;
 
-    const std::string& getVertexId() const { return vertexId; }
+    [[nodiscard]] double getVmax()     const { return vmax.value; }
+    [[nodiscard]] double getVmin()     const { return vmin.value; }
+    [[nodiscard]] double getVoptimal() const { return voptimal.value;  }
+
+    [[nodiscard]] const std::string& getVertexId() const { return vertexId; }
+    
+    [[nodiscard]] double getFreeTime() const {
+        return freeTime.value;
+    }
+
     void setVmax(double new_vmax) {
-        assert(new_vmax > vmin);
-        vmax = new_vmax;
+        assert(new_vmax > vmin.value);
+        vmax.value = new_vmax;
         initVoptimal();
     }
 
     void setVmin(double new_vmin) {
         assert(new_vmin > 0);
-        vmin = new_vmin;
+        vmin.value = new_vmin;
         initVoptimal();
     }
 
-    virtual void initVoptimal() {
-        voptimal = (vmax + vmin) / 2;
-    }
-
-    double getFreeTime() const {
-        return freeTime;
-    }
-
     void setFreeTime(double new_free_time) {
-        freeTime = new_free_time;
+        assert(new_free_time > 0);
+        freeTime.value = new_free_time;
     }
 
 private:
-    double vmax;
-    double vmin;
-    double voptimal;
-    double freeTime;
+    virtual void initVoptimal() {
+        voptimal.value = (vmax.value + vmin.value) / 2;
+    }
 
     std::string vertexId;
+    
+    DroneVMax vmax{};
+    DroneVMin vmin{};
+    DroneFreeTime freeTime{};
+    DroneVOptimal voptimal{};
 };
-
 
 class Map {
 public:
     using Point = Eigen::Vector3d;
 
-public:
-    Map() = default;
+    explicit Map(double safetyTime = 0.0)
+        : safetyTime(safetyTime) {};
 
     size_t size() const {
         return vertexes.size();
     }
 
-    double getEpsilon() const {
-        return 1.0; // Placeholder for epsilon value
+    static double getEpsilon() {
+        return map_cfg::COORDINATE_TOLERANCE;
     }
 
-    const Point& getVertexPosition(const std::string& id) const {
-        RCLCPP_INFO(rclcpp::get_logger("Map"), "getVertexPosition: %s", id.c_str());
-        assert(vertexes.find(id) != vertexes.end());
-        return vertexes.at(id)->getPosition();
+    const Point& getVertexPosition(const std::string& vertexId) const {
+        assert(vertexes.find(vertexId) != vertexes.end());
+        return vertexes.at(vertexId)->getPosition();
     } 
 
     std::string getVertexId(const Point& position) const {
@@ -187,9 +234,9 @@ public:
         return std::string{""};
     }
 
-    void addVertex(const std::string& id, const Point& position) {
-        auto vertex = std::make_shared<Vertex>(id, position);
-        vertexes[id] = vertex;
+    void addVertex(const std::string& vertexId, const Point& position) {
+        auto vertex = std::make_shared<Vertex>(vertexId, position);
+        vertexes[vertexId] = vertex;
     }
 
     void addEdge(const std::string& id_from, const std::string& id_to, double timeOpen = 0.0) {
@@ -199,50 +246,21 @@ public:
         vertexes[id_from]->addNeighbor(vertexes[id_to], timeOpen);
     }
 
-    bool isPathsValid(const std::string& id_from, const std::string& id_to, const std::list<Path>& paths) {
-        assert(vertexes.find(id_from) != vertexes.end());
-        assert(vertexes.find(id_to) != vertexes.end());
-
-        bool res = true;
-
-        for (const auto& path: paths) {
-            if (path.vertexes.empty()) {
-                res = false;
-                break;
-            }
-
-            if (path.vertexes.front()->getId() != id_from ||
-                path.vertexes.back()->getId() != id_to) {
-                res = false;
-                break;
-            }
-        }
-
-        return res;
-    }
-
     Mission generateMission(const std::string& id_from, const std::string& id_to, 
-                            Drone drone, OptimalPathMode mode) {
+                            const Drone& drone, OptimalPathMode mode) {
         assert(vertexes.find(id_from) != vertexes.end());
         assert(vertexes.find(id_to) != vertexes.end());
 
         std::list<Path> paths;
         generatePaths(id_from, id_to, paths);
-        assert(isPathsValid(id_from, id_to, paths));
 
-        Path optimalPath = findOptimalPath(paths, drone, mode);
+        const Path optimalPath = findOptimalPath(paths, drone, mode);
         assert(!optimalPath.isEmpty());
         
         Mission mission;
         fieldMission(optimalPath, drone, mission);
 
-        if (mission.timeStart < drone.getFreeTime()) {
-            mission.timeStart = drone.getFreeTime();
-        }
-
-        RCLCPP_INFO(rclcpp::get_logger("Map"), "Start updateMap");
         updateMap(mission);
-        RCLCPP_INFO(rclcpp::get_logger("Map"), "Finish updateMap");
 
         return mission;
     }
@@ -257,52 +275,52 @@ public:
         }
     }
 
-    void fieldMission(const Path& path, const Drone& drone, Mission& mission) {
+    void fieldMission(const Path& path, const Drone& drone, Mission& mission) const {
         assert(!path.isEmpty());
        
-        double timeStart = path.vertexes[0]->getTimeOpen(path.vertexes[1]->getId());
+        double timeStart = path[0]->getTimeOpen(path[1]->getId());
 
         double length = 0.0;
 
         for (size_t i = 1; i < path.size() - 1; ++i) {
-            length += path.vertexes[i-1]->getLength(path.vertexes[i]->getId());
-            double timeFly = timeStart + length / drone.getVoptimal();
-            double timeOpen = path.vertexes[i]->getTimeOpen(path.vertexes[i+1]->getId());
+            length += path[i-1]->getLength(path[i]->getId());
+            const double timeFly = timeStart + (length / drone.getVoptimal());
+            const double timeOpen = path[i]->getTimeOpen(path[i+1]->getId());
             if (timeFly < timeOpen + getSafetyTime()) {
-                double dtime = (timeOpen - timeFly) + getSafetyTime();
+                const double dtime = (timeOpen - timeFly) + getSafetyTime();
                 timeStart += dtime;
             }
         }
 
-        mission.timeStart = timeStart;
-        mission.timeFinish = timeStart + path.getDistance() / drone.getVoptimal();
-        mission.vertexes.push_back(path.vertexes[0]->getId());
+        mission.timeStart  = timeStart;
+        mission.timeFinish = timeStart + getSafetyTime() + (path.getDistance() / drone.getVoptimal());
+        mission.vertexes.push_back(path[0]->getId());
         for (size_t i = 1; i < path.size(); ++i) {
             mission.velocities.push_back(drone.getVoptimal());
-            mission.vertexes.push_back(path.vertexes[i]->getId());
+            mission.vertexes.push_back(path[i]->getId());
         }
     }
 
     double getSafetyTime() const {
-        return 5.0; // Placeholder for safety time calculation
+        return safetyTime;
     }
 
     Path findOptimalPath(const std::list<Path>& paths, Drone drone, 
-                         OptimalPathMode mode) {
+                         OptimalPathMode mode) const {
         assert(!paths.empty());
 
         if (mode == OptimalPathMode::MIN_DISTANCE) {
             return findMinimalDistancePath(paths);
         }
         
-        return Path();
+        return {};
     }
 
-    const Path& findMinimalDistancePath(const std::list<Path>& paths) const {
+    static const Path& findMinimalDistancePath(const std::list<Path>& paths)  {
         assert(!paths.empty());
         return *std::min_element(paths.begin(), paths.end(),
-            [](const Path& a, const Path& b) {
-                return a.getDistance() < b.getDistance();
+            [](const Path& pathA, const Path& pathB) {
+                return pathA.getDistance() < pathB.getDistance();
             });
     }
 
@@ -311,47 +329,46 @@ public:
         assert(vertexes.find(id_from) != vertexes.end());
         assert(vertexes.find(id_to) != vertexes.end());
         
-        Path curPath;
-
-        recursiveGeneratePath(id_from, id_to, paths, curPath);
+        paths.emplace_front();
+        auto curPathIt = paths.begin();
+        recursiveGeneratePath(id_from, id_to, paths, curPathIt);
     }
 
 private:
     void recursiveGeneratePath(const std::string& id_from, const std::string& id_to, 
-                               std::list<Path>& paths, Path curPath) {
+                               std::list<Path>& paths, std::list<Path>::iterator& curPathIt) {
         assert(vertexes.find(id_from) != vertexes.end());
         assert(vertexes.find(id_to) != vertexes.end());
 
-        // std::cout << "Recursive call: " << id_from << " -> " << id_to << std::endl;
-        // std::cout << "Current path: ";
-        // for (const auto& vertex: curPath.vertexes) {
-        //     std::cout << vertex->getId() << " ";
-        // }
-        // std::cout << std::endl;
-
         if (id_from == id_to) {
-            curPath.addVertex(vertexes[id_from]);
-            paths.push_back(curPath);
+            (*curPathIt).addVertex(vertexes[id_from]);
             return;
         }
 
         if (vertexes[id_from]->isHasNeighbors() &&
-            curPath.isNotInPath(id_from)) 
+            (*curPathIt).isNotInPath(id_from)) 
         {
-            // std::cout << "Adding vertex: " << id_from << std::endl;
-            curPath.addVertex(vertexes[id_from]);
+            (*curPathIt).addVertex(vertexes[id_from]);
+            bool curPathUse = false;
 
-            for (const auto& neighbor: vertexes[id_from]->getNeighbors()) {
-                // std::cout << "Checking neighbor: " << neighbor->getId() << std::endl;
-                if (!neighbor->isCanFlyAcross() && 
-                    neighbor->getId() != id_to) { continue; }
-                Path newPath = curPath;
-                recursiveGeneratePath(neighbor->getId(), id_to, paths, newPath);
+            for (const auto& [vertexId, neighbor]: vertexes[id_from]->getNeighbors()) {
+                if (!neighbor->isCanFlyAcross() && vertexId != id_to) {
+                     continue; 
+                }
+
+                if (!curPathUse) {
+                    curPathUse = true;
+                    recursiveGeneratePath(neighbor->getId(), id_to, paths, curPathIt);
+                } else {
+                    paths.emplace_front(*curPathIt);
+                    auto newPathIt = paths.begin();
+                    recursiveGeneratePath(id_from, id_to, paths, newPathIt);
+                }
             }
             return;
         }
     }
 
-private:
+    double safetyTime;
     std::unordered_map<std::string, std::shared_ptr<Vertex>> vertexes;    
 };

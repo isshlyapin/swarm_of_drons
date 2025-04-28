@@ -6,9 +6,8 @@
 namespace DroneComposition {
 
 Drone::Drone(const rclcpp::NodeOptions & options)
-: Node("Drone", options)
+: Node("Drone", options), realName(this->get_name())
 {
-    realName = this->get_name();
     model = realName.substr(0, realName.rfind('_'));
     id = std::stoi(realName.substr(realName.rfind('_') + 1));
 
@@ -87,7 +86,7 @@ void Drone::flight(Point targetPoint, Vector3 velocity) {
 
         odometryPublisher->publish(odometry);
 
-        rclcpp::Time tmpTime = this->now();
+        const rclcpp::Time tmpTime = this->now();
         dTime = tmpTime - curTime;
         if (dTime == rclcpp::Duration(0, 0)) {
             continue;
@@ -157,7 +156,7 @@ void Drone::sendReport(DroneState state) {
     RCLCPP_INFO(get_logger(), "Drone %s: Report sent", realName.c_str());
 }
 
-}
+} // namespace DroneComposition
 
 #include "rclcpp_components/register_node_macro.hpp"
 
