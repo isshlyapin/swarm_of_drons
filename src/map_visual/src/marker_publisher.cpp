@@ -31,7 +31,7 @@ void MarkerPublisher::communicationInit() {
         control_points_qos
     );
     timer_ = this->create_wall_timer(
-        10s,
+        3s,
         [this]() {
             this->publishMarkers();
         }
