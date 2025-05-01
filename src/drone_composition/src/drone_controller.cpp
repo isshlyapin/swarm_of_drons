@@ -201,6 +201,9 @@ void DroneController::globalMissionHandler(const MsgGlobalMissionPtrT msg) {
     mission.poses      = msg->poses;
     mission.start_time = msg->start_time;
     mission.velocities = msg->velocities;
+    mission.mission_type = msg->mission_type;
+    mission.id_from   = msg->id_from;
+    mission.id_to     = msg->id_to;
 
     std::thread{
         [this, msg, mission]() {

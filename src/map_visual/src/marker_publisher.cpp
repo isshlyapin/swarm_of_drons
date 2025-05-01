@@ -10,6 +10,7 @@ MarkerPublisher::MarkerPublisher()
 {
     declare_parameter("drone_ports_qos", 25);
     declare_parameter("control_points_qos", 25);
+    declare_parameter("text_markers_qos", 25);
 
     declare_parameter("map_file", "");
 
@@ -21,6 +22,7 @@ MarkerPublisher::MarkerPublisher()
 void MarkerPublisher::communicationInit() {
     int drone_ports_qos = get_parameter("drone_ports_qos").as_int();
     int control_points_qos = get_parameter("control_points_qos").as_int();
+    int text_markers_qos = get_parameter("text_markers_qos").as_int();
 
     dronePortsPublisher = this->create_publisher<MsgMarkerT>(
         getDronePortsTopic(), 
@@ -29,6 +31,10 @@ void MarkerPublisher::communicationInit() {
     controlPointsPublisher = this->create_publisher<MsgMarkerT>(
         getControlPointsTopic(), 
         control_points_qos
+    );
+    textPublisher_ = this->create_publisher<MsgMarkerT>(
+        getTextMarkersTopic(), 
+        text_markers_qos
     );
     timer_ = this->create_wall_timer(
         3s,
@@ -53,8 +59,33 @@ void MarkerPublisher::mapInit() {
     double x, y, z;
     while (reader.read_row(index, x, y, z)) {
         markers.push_back(createMarker(index, Point{x, y, z}));
+        textMarkers_.push_back(createTextMarker(index, Point{x, y, z}));
     }
     RCLCPP_INFO(get_logger(), "Loaded %zu entries from CSV", markers.size());
+}
+
+MarkerPublisher::MsgMarkerT MarkerPublisher::createTextMarker(const std::string &index, const Point &point) {
+    MsgMarkerT marker;
+    marker.header.frame_id = "map";
+    marker.header.stamp = this->now();
+    marker.ns = index[0] == 'd' ? "drone_port_tags" : "control_point_tags";
+    marker.id = std::stoi(index.substr(1));
+    marker.action = MsgMarkerT::ADD;
+    marker.lifetime = rclcpp::Duration(0, 0);
+    marker.pose.position.x = point.x() - 10;
+    marker.pose.position.y = point.y() - 10;
+    marker.pose.position.z = point.z() + 3.0;
+
+    marker.type = MsgMarkerT::TEXT_VIEW_FACING;
+    marker.scale.z = 15.0;
+    marker.color.r = 1.0f;
+    marker.color.g = 1.0f;
+    marker.color.b = 1.0f;
+    marker.color.a = 1.0f;
+    
+    marker.text = index;
+
+    return marker;
 }
 
 MarkerPublisher::MsgMarkerT MarkerPublisher::createMarker(const std::string &index, const Point &point) {
@@ -75,9 +106,9 @@ MarkerPublisher::MsgMarkerT MarkerPublisher::createMarker(const std::string &ind
         marker.scale.y = 10.0;
         marker.scale.z = 5.0;
         marker.color.r = 0.0f;
-        marker.color.g = 0.0f;
+        marker.color.g = 0.325f;
         marker.color.b = 1.0f;
-        marker.color.a = 0.8f;
+        marker.color.a = 1.0f;
     } else if (index[0] == 'p') {
         marker.type = MsgMarkerT::CYLINDER;
         marker.scale.x = 10.0;
@@ -104,5 +135,9 @@ void MarkerPublisher::publishMarkers() {
         } else if (marker.ns == "control_points") {
             controlPointsPublisher->publish(marker);
         }        
+    }
+    for (auto &marker : textMarkers_) {
+        marker.header.stamp = now;
+        textPublisher_->publish(marker);
     }
 }

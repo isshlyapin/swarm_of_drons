@@ -1,11 +1,13 @@
 #pragma once
 
+#include <rclcpp/publisher.hpp>
 #include <string>
 
 #include <Eigen/Geometry>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
-#include "nav_msgs/msg/odometry.hpp"
 #include "drone_interfaces/msg/report.hpp"
 #include "drone_interfaces/msg/mission.hpp"
 
@@ -61,14 +63,17 @@ private:
 
     void sendReport(DroneState state);
 
+    void sendLog(const MsgMissionPtrT msg);
+
 private:
     int id;
     std::string model;
     std::string realName;
     Point currentPosition;
-    rclcpp::Publisher<MsgReportT>::SharedPtr     reportPublisher;
-    rclcpp::Publisher<MsgOdometryT>::SharedPtr   odometryPublisher;
-    rclcpp::Subscription<MsgMissionT>::SharedPtr missionSubscription;
+    rclcpp::Publisher<MsgReportT>::SharedPtr            reportPublisher;
+    rclcpp::Publisher<MsgOdometryT>::SharedPtr          odometryPublisher;
+    rclcpp::Subscription<MsgMissionT>::SharedPtr        missionSubscription;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr logsPublisher;
 };
 
 }

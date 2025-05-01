@@ -22,8 +22,13 @@ bool GraphInterface::CheckEqualPose(double x1, double y1, double x2, double y2, 
     return false;
 }
 
-void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id) {
+void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id,
+             const std::string& mission_type) {
     mission.start_time = path.time_start;
+    mission.mission_type = mission_type;
+    mission.id_from = path.route.front()->getName();
+    mission.id_to = path.route.back()->getName();
+
     //RCLCPP_INFO(this->get_logger(), "Tstart: %f", path.time_start.seconds());
     mission.velocities.clear();
 
@@ -152,13 +157,13 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
 
     if (allnodes[numbernode] != curMission->start) {
         curRoute = allnodes[numbernode]->GenRouteTo(curMission->start, allnodes, Tstart, Vmin, Vmax);    
-        fillMsgMission( curRoute, sendMission, result->id);
+        fillMsgMission( curRoute, sendMission, result->id, "relocate");
         mission_publisher->publish(sendMission);
     }
 
     curRoute = curMission->start->GenRouteTo(curMission->finish, allnodes, curRoute.time_finish + Tdelay, Vmin, Vmax);
 
-    fillMsgMission(curRoute, sendMission, result->id);
+    fillMsgMission(curRoute, sendMission, result->id, "execute");
 
     mission_publisher->publish(sendMission);
 }

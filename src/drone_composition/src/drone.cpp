@@ -51,6 +51,14 @@ Drone::Drone(const rclcpp::NodeOptions & options)
         getOdometryTopic(),
         qos_odm
     );
+
+    logsPublisher = create_publisher<std_msgs::msg::String>(
+        "/panel_logs",
+        25
+    );
+
+    RCLCPP_INFO(this->get_logger(), "Drone %s: flight_rate = %g", realName.c_str(), 
+        get_parameter("flight_rate").as_double());
 }
 
 void Drone::flight(Point targetPoint, Vector3 velocity) {
@@ -111,6 +119,7 @@ void Drone::missionHandler(const MsgMissionPtrT msg) {
     RCLCPP_INFO(get_logger(), "Drone %s: Mission started", realName.c_str());
 
     sendReport(DroneState::FLY);
+    sendLog(msg);
 
     if (msg->poses.size() != msg->velocities.size()) {
         RCLCPP_ERROR(this->get_logger(), "Drone %s: Different size mission poses and velocities", realName.c_str());
@@ -141,6 +150,22 @@ void Drone::missionHandler(const MsgMissionPtrT msg) {
     RCLCPP_INFO(get_logger(), "Drone %s: Mission finished", realName.c_str());
 
     sendReport(DroneState::READY);
+}
+
+void Drone::sendLog(const MsgMissionPtrT msg) {
+    std_msgs::msg::String logMsg;
+    logMsg.data = realName + " ";
+    if (msg->mission_type == "relocate") {
+        logMsg.data += "relocates";
+    } else if (msg->mission_type == "execute") {
+        logMsg.data += "executes mission";
+    } else {
+        logMsg.data += "unknown mission type";
+    }
+    logMsg.data += " from " + msg->id_from + " to " + msg->id_to;
+    logsPublisher->publish(
+        logMsg
+    );
 }
 
 void Drone::sendReport(DroneState state) {

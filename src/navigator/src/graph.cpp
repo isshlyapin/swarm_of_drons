@@ -51,6 +51,9 @@ bool graph_node::CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node,
             if (timepair.first.get_clock_type() != 1 || timepair.second.get_clock_type() != 1) {
                 RCLCPP_ERROR(rclcpp::get_logger("graph"), "Not sim time in CalcPossTimeEdgeAndNode");
             }
+            RCLCPP_INFO(rclcpp::get_logger("graph"), "timepair");
+            RCLCPP_INFO(rclcpp::get_logger("graph"), "[%f, %f]",
+                timepair.first.seconds(), timepair.second.seconds());
             new_poss.AppendTime(timepair);
         } else if ( TimeTable::isFirstBiggerOrEq(t3, t1) &&
                     TimeTable::isFirstBiggerOrEq(t2, t3)) {
@@ -58,12 +61,22 @@ bool graph_node::CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node,
             if (timepair.first.get_clock_type() != 1 || timepair.second.get_clock_type() != 1) {
                 RCLCPP_ERROR(rclcpp::get_logger("graph"), "Not sim time in CalcPossTimeEdgeAndNode");
             }
+            RCLCPP_INFO(rclcpp::get_logger("graph"), "timepair");
+            RCLCPP_INFO(rclcpp::get_logger("graph"), "[%f, %f]",
+                timepair.first.seconds(), timepair.second.seconds());
             new_poss.AppendTime(timepair);
         }
     }
 
+    RCLCPP_INFO(rclcpp::get_logger("graph"), "new_poss");
+    new_poss.PrintTimes();
+    RCLCPP_INFO(rclcpp::get_logger("graph"), "old_poss");
+    node->getTimes().PrintTimes();
     new_poss -= node->getTimes();
+    RCLCPP_INFO(rclcpp::get_logger("graph"), "new new_poss");
+    new_poss.PrintTimes();
     TimeTable old_poss_times = node->getPossTimes();
+
     node->AddPossTimes(new_poss);
 
     if (old_poss_times != node->getPossTimes()) {
@@ -236,8 +249,10 @@ Route graph_node::GenRouteTo(std::shared_ptr<graph_node>& goal_node,
     std::shared_ptr<graph_node> new_goal = goal_node;
     path.insert(path.begin(), new_goal);
     Route route;
+    //RCLCPP_INFO(rclcpp::get_logger("graph"), "t_finish");
     rclcpp::Time t_finish = goal_node->getPossTimes().getTime(0).first;
     rclcpp::Time old_t_finish = goal_node->getPossTimes().getTime(0).first;
+    //RCLCPP_INFO(rclcpp::get_logger("graph"), "after t_finish");
     std::shared_ptr<graph_node> old_goal;
     route.time_finish = t_finish;
 

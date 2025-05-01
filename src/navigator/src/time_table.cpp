@@ -80,12 +80,14 @@ void TimeTable::DeleteTime(const std::pair<rclcpp::Time, rclcpp::Time>& time) {
         }
     }
     else if (i2 > 0 && i2 - 1 > i1) {
-        if ( isFirstTimeBigger(time.first, times[i1].first)) {
+        if ( isFirstTimeBigger(time.first, times[i1].first) &&
+             isFirstTimeBigger(times[i1].second, time.first)) {
             times[i1].second = time.first;
             i1++;
         }
-        if (isFirstTimeBigger(times[i2 - 1].second, time.second)) {
-            times[i2 - 1].second = time.second;
+        if (isFirstTimeBigger(times[i2 - 1].second, time.second) &&
+            isFirstTimeBigger(time.second, times[i2 - 1].first)) {
+            times[i2 - 1].first = time.second;
             i2--;
         }
         if (i2 >= i1) {
