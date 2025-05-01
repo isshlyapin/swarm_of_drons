@@ -27,12 +27,15 @@ class graph_node: public std::enable_shared_from_this<graph_node> {
         std::vector<std::shared_ptr<edge>> edges;
         TimeTable timetable;
         TimeTable poss_times;
+        rclcpp::Time Tdelay = TimeTable::TimeFloatToRCL(2);
 
         bool CalcPossTimeEdgeAndNode(std::shared_ptr<graph_node>& node, std::shared_ptr<edge>& edge, double Vmin, double Vmax);
 
         std::shared_ptr<graph_node>& GetRightNeighbour(std::shared_ptr<graph_node>& goal, 
                 std::vector<std::shared_ptr<graph_node>>& allNodes, double& vel,
                 rclcpp::Time t_finish, rclcpp::Time& t_start, double Vmin, double Vmax);
+
+        bool canGoToThisEdge(TimeTable& edgestime, rclcpp::Time& Tmin, rclcpp::Time Tmax, rclcpp::Time t_finish);
     
     public:
         graph_node(const std::string& name, double x, double y, int echelon, bool dronport, size_t rec) 
@@ -53,11 +56,12 @@ class graph_node: public std::enable_shared_from_this<graph_node> {
         void AddTime(std::pair<rclcpp::Time, rclcpp::Time>& timing)     {timetable.AppendTime(timing);}
         void AddPossTime(std::pair<rclcpp::Time, rclcpp::Time>& timing) {poss_times.AppendTime(timing);}
         void AddPossTimes(TimeTable& times)                             {poss_times += times;}
+        void DeleteTime(std::pair<rclcpp::Time, rclcpp::Time>& timing)  {timetable.DeleteTime(timing);}
         void ClearPossTimes()                                           {poss_times.ClearTimes();}
 
         void refCurDepRec() {curRecDep = 0;}
 
-        void ClearTimeValues(std::vector<std::shared_ptr<graph_node>>& allNodes);
+        void ClearTimeValues(std::vector<std::shared_ptr<graph_node>>& allNodes, rclcpp::Time t_start);
 
         void CalcAllPossTimes(double Vmin, double Vmax, std::vector<std::shared_ptr<graph_node>>& involved_nodes);
 

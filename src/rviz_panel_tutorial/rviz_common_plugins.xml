@@ -1,0 +1,5 @@
+<library path="logs_panel">
+  <class type="rviz_log_panel::LogPanel" base_class_type="rviz_common::Panel">
+    <description>A very basic panel for a tutorial</description>
+  </class>
+</library>

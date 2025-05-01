@@ -16,21 +16,25 @@
 #include "../include/interface.hpp"
 
 bool GraphInterface::CheckEqualPose(double x1, double y1, double x2, double y2, double z1, double z2) {
-    double eps = 1;
+    double eps = 10;
     if ( abs(x1 - x2) <= eps && abs(y2 - y1) <= eps && 
             abs(z2 - z1) <= eps) return true;
     return false;
 }
 
-void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id) {
+void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id,
+             const std::string& mission_type) {
     mission.start_time = path.time_start;
-    // for (const auto& vel : path.velocities) {
-    //     mission.velocities.push_back(vel);
-    // }
+    mission.mission_type = mission_type;
+    mission.id_from = path.route.front()->getName();
+    mission.id_to = path.route.back()->getName();
+
+    //RCLCPP_INFO(this->get_logger(), "Tstart: %f", path.time_start.seconds());
     mission.velocities.clear();
 
     for (size_t i = 0; i < path.velocities.size(); i++) {
         mission.velocities.push_back(static_cast<float>(path.velocities[i]));
+        //RCLCPP_INFO(this->get_logger(), "v[%ld]: %f", i, path.velocities[i]);
     }
     mission.drone_id = drone_id;
     std::vector<std::vector<double>> poses;
@@ -47,11 +51,9 @@ void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMi
     for (size_t i = 1; i < poses.size(); i++) {
         geometry_msgs::msg::Pose pose;
         pose.position.x = poses[i][0];
-        RCLCPP_INFO(this->get_logger(), "x: %f", poses[i][0]);
+        //RCLCPP_INFO(this->get_logger(), "x: %f y: %f", poses[i][0], poses[i][1]);
         pose.position.y = poses[i][1];
-        RCLCPP_INFO(this->get_logger(), "y: %f", poses[i][1]);
         pose.position.z = poses[i][2];
-        RCLCPP_INFO(this->get_logger(), "z: %f", poses[i][2]);
         mission.poses.push_back(pose);
     }
 }
@@ -90,7 +92,8 @@ void GraphInterface::init(const std::string& pathToGraph, const std::string& pat
     RCLCPP_INFO(this->get_logger(), "Inited graph:");
     for (size_t i = 0; i < allnodes.size(); i++) {
         RCLCPP_INFO(this->get_logger(),
-            "Node1: %s", allnodes[i]->getName().c_str());
+            "Node: %s dronport: %d", 
+            allnodes[i]->getName().c_str(), allnodes[i]->getDronport());
     }
 }
 
@@ -120,6 +123,7 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
       }
       RCLCPP_INFO(node->get_logger(), "waiting for service to appear...");
     }
+
     auto request = std::make_shared<navigator_interfaces::srv::FreeDrone::Request>();
     std::shared_ptr<Mission> curMission = allmissions.front();
     allmissions.pop();
@@ -131,15 +135,11 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
     if (rclcpp::spin_until_future_complete(node, result_future) !=
       rclcpp::FutureReturnCode::SUCCESS)
     {
-      RCLCPP_ERROR(node->get_logger(), "service call failed :(");
-      client->remove_pending_request(result_future);
-      return;
+        RCLCPP_ERROR(node->get_logger(), "service call failed :(");
+        client->remove_pending_request(result_future);
+        return;
     }
     auto result = result_future.get();
-    // auto result = result_future;
-    RCLCPP_INFO(
-      node->get_logger(), "Result: %s_%d",
-      result->model.c_str(), result->id);
 
     size_t numbernode = 0;
     while (!CheckEqualPose(allnodes[numbernode]->getX(), allnodes[numbernode]->getY(), 
@@ -149,34 +149,21 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
     }
 
     rclcpp::Clock clock(RCL_ROS_TIME);
-    rclcpp::Duration Tdelay = rclcpp::Duration(10, 0);
+    rclcpp::Duration Tdelay = rclcpp::Duration(5, 0);
     rclcpp::Time Tstart = this->now() + Tdelay;
-
-    RCLCPP_INFO(this->get_logger(), 
-        "Sending in genRoute1 from: %s", allnodes[numbernode]->getName().c_str());
-    RCLCPP_INFO(this->get_logger(), 
-        "To: %s", curMission->start->getName().c_str());
-    RCLCPP_INFO(this->get_logger(), 
-        "Time: %f", Tstart.seconds());
-
-    Route curRoute = allnodes[numbernode]->GenRouteTo(curMission->start, allnodes, Tstart, Vmin, Vmax);
-    RCLCPP_INFO(this->get_logger(), "Generated route was finished");
-
+    Route curRoute;
+    curRoute.time_finish = Tstart - Tdelay;
     drone_interfaces::msg::GlobalMission sendMission;
-    fillMsgMission( curRoute, sendMission, result->id);
-    RCLCPP_INFO(this->get_logger(), "Publishing mission");
-    mission_publisher->publish(sendMission);
 
-    RCLCPP_INFO(this->get_logger(), "Start generating second route");
-    RCLCPP_INFO(this->get_logger(), 
-        "Sending in genRoute1 from: %s", curMission->start->getName().c_str());
-    RCLCPP_INFO(this->get_logger(), 
-        "To: %s", curMission->finish->getName().c_str());
+    if (allnodes[numbernode] != curMission->start) {
+        curRoute = allnodes[numbernode]->GenRouteTo(curMission->start, allnodes, Tstart, Vmin, Vmax);    
+        fillMsgMission( curRoute, sendMission, result->id, "relocate");
+        mission_publisher->publish(sendMission);
+    }
+
     curRoute = curMission->start->GenRouteTo(curMission->finish, allnodes, curRoute.time_finish + Tdelay, Vmin, Vmax);
 
-    RCLCPP_INFO(this->get_logger(), "Generated second route was finished");
-    fillMsgMission(curRoute, sendMission, result->id);
+    fillMsgMission(curRoute, sendMission, result->id, "execute");
 
-    RCLCPP_INFO(this->get_logger(), "Sending second route");
     mission_publisher->publish(sendMission);
 }

@@ -13,13 +13,19 @@ def generate_launch_description():
     drones_file_arg = DeclareLaunchArgument(
         'drones_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/test/test2/drones.csv'
+            text='/workspaces/swarm_of_drons/tests/test4/drones.csv'
         ),
         description='Path to CSV file with drone parameters.'
+    )
+    flight_rate_arg = DeclareLaunchArgument(
+        'flight_rate',
+        default_value=TextSubstitution(text='50.0'),
+        description='Rate at which the drones will fly.'
     )
 
     return launch.LaunchDescription([
         drones_file_arg,
+        flight_rate_arg,
         OpaqueFunction(function=create_nodes)
     ])
 
@@ -42,6 +48,7 @@ def read_drones_file(context, file_path: LaunchConfiguration) -> List[dict]:
 def create_nodes(context):
     """Creates the list of composable node descriptions."""
     drones_file_config = LaunchConfiguration('drones_file')
+    flight_rate_config = LaunchConfiguration('flight_rate')
     drones = read_drones_file(context, drones_file_config)
 
     nodes = []
@@ -68,6 +75,7 @@ def create_nodes(context):
             name=drone_name,
             parameters=[{
                 'use_sim_time': True,
+                'flight_rate': flight_rate_config,
                 'pose_x': float(drone['x']),
                 'pose_y': float(drone['y']),
                 'pose_z': float(drone['z']),

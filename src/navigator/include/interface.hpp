@@ -28,7 +28,8 @@ class GraphInterface: public rclcpp::Node {
         double Vmin; double Vmax;
         
         static bool CheckEqualPose(double x1, double y1, double x2, double y2, double z1, double z2);
-        void fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id);
+        void fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id, 
+            const std::string& mission_type);
 
     public:
         GraphInterface(const std::string& nodename)
