@@ -6,18 +6,21 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
+find_package(rclcpp REQUIRED)
+find_package(data_utils REQUIRED)
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(drone_interfaces REQUIRED)
+find_package(ament_cmake_gtest REQUIRED)
+find_package(navigator_interfaces REQUIRED)
 
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(ament_cmake_gtest REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(data_utils REQUIRED)
-find_package(drone_interfaces REQUIRED)
-find_package(navigator_interfaces REQUIRED)
 
 add_executable(navigator2
+    src/map.cpp
+    src/mission_manager.cpp
+    src/navigator.cpp
     src/main.cpp
 )
 
@@ -40,37 +43,20 @@ install(TARGETS
     DESTINATION lib/${PROJECT_NAME}
 )
 
-# if(BUILD_TESTING)
-# #   find_package(ament_lint_auto REQUIRED)
-# #   ament_lint_auto_find_test_dependencies()
-
-#   # Тесты для Vertex
-#   ament_add_gtest(test_vertex test/test1.cpp)
-#   ament_target_dependencies(test_vertex
-#     rclcpp
-#     geometry_msgs
-#     data_utils
-#     drone_interfaces
-#     navigator_interfaces
-#     Eigen3
-# )
-# #   target_link_libraries(test_vertex navigator2)
-#   target_include_directories(test_vertex PRIVATE include)
-
-#   # Тесты для Path
-#   ament_add_gtest(test_path test/test_path.cpp)
-#   target_link_libraries(test_path your_package)
-  
-  # Аналогично для других тестов...
-# endif()
-
-# if(BUILD_TESTING)
-#   find_package(ament_cmake_gtest REQUIRED)
-#   ament_add_gtest(${PROJECT_NAME}_test test/test1.cpp)
-#   target_include_directories(${PROJECT_NAME}_test PUBLIC
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#     $<INSTALL_INTERFACE:include>
-#   )
-# endif()
+if(BUILD_TESTING)
+    ament_add_gtest(test_map
+        src/map.cpp
+        test/test1.cpp
+    )
+    ament_target_dependencies(test_map
+        rclcpp
+        Eigen3
+        data_utils
+        geometry_msgs
+        drone_interfaces
+        navigator_interfaces
+    )
+    target_include_directories(test_map PRIVATE include)
+endif()
 
 ament_package()
