@@ -244,7 +244,7 @@ void DroneController::reportHandler(const Drone::MsgReportPtrT msg) {
     }
 }
 
-void DroneController::odometryHandler(const Drone::MsgOdometryPtrT msg, int droneId) {}
+void DroneController::odometryHandler(const Drone::MsgOdometryPtrT /*msg*/, int /*droneId*/) {}
 
 } // namespace DroneComposition
 

@@ -1,0 +1,24 @@
+name: Unit test
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container:
+      image: isshlyapin/ros2:1.3
+      volumes:
+        - /etc/localtime:/etc/localtime
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build project
+        run: |
+          . /opt/ros/jazzy/setup.bash
+          colcon build
+      
+      - name: Navigator2 tests
+        run: |
+          colcon test
