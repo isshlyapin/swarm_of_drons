@@ -15,6 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(drone_interfaces REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(ament_cmake_gtest REQUIRED)
 find_package(navigator_interfaces REQUIRED)
 
 find_package(magic_enum CONFIG REQUIRED)
@@ -82,12 +83,19 @@ set(node_plugins "${node_plugins}DroneComposition::DroneController;$<TARGET_FILE
 
 # === Install and Export ===
 ament_export_targets(export_drone HAS_LIBRARY_TARGET)
+ament_export_targets(export_drone_controller HAS_LIBRARY_TARGET)
 ament_export_dependencies(
     rclcpp
     Eigen3
     nav_msgs
+    std_msgs
+    std_srvs
+    data_utils
+    geometry_msgs
     drone_interfaces
     rclcpp_components
+    navigator_interfaces
+    magic_enum
 )
 
 install(
@@ -112,5 +120,20 @@ install(
     DIRECTORY include/
     DESTINATION include
 )
+
+if (BUILD_TESTING)
+    ament_add_gtest(drone_composition_test
+        test/test_drone_composition.cpp
+    )
+    ament_target_dependencies(drone_composition_test
+        rclcpp
+        drone_interfaces    
+    )
+    target_include_directories(drone_composition_test PRIVATE include)
+    target_link_libraries(drone_composition_test
+        drone
+        drone_controller
+    )
+endif()
 
 ament_package()
