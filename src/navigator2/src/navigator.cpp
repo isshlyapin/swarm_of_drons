@@ -5,24 +5,24 @@
 #include <rclcpp/logging.hpp>
 #include <string>
 
-Navigator::Navigator()
-: Node("navigator"), map_(2.0)
+Navigator::Navigator(const rclcpp::NodeOptions& options)
+: Node("navigator", options), map_(2.0)
 {
     RCLCPP_INFO(get_logger(), "Navigator node started.");
     
     declare_parameter("graph_file", "");
     declare_parameter("edges_file", "");
     declare_parameter("missions_file", "");
-
+    
     declare_parameter("global_mission_qos", 10);
     declare_parameter("free_drone_qos", 10);
-
+    
     initCommunication();
-
+    
     const std::string graph_file_path = get_parameter("graph_file").as_string();
     const std::string edges_file_path = get_parameter("edges_file").as_string();
     const std::string missions_file_path = get_parameter("missions_file").as_string();
-
+    
     if (graph_file_path.empty())
     {
         RCLCPP_ERROR(this->get_logger(), "Graph file path not provided.");
@@ -38,12 +38,19 @@ Navigator::Navigator()
         RCLCPP_ERROR(this->get_logger(), "Missions file path not provided.");
         throw rclcpp::exceptions::InvalidParameterValueException("Missions file path not provided.");
     }
-
+   
+    RCLCPP_INFO(get_logger(), "Loading graph");
     map_.loadGraphFromCSV(graph_file_path);
+
+    RCLCPP_INFO(get_logger(), "Loading edges");
     map_.loadEdgesFromCSV(edges_file_path);
 
+    RCLCPP_INFO(get_logger(), "Loading missions");    
     mission_manager_.loadMissionsFromCSV(missions_file_path);
+    RCLCPP_INFO(get_logger(), "Navigator node initialized with graph, edges, and missions.");
 }
+
+Navigator::Navigator() : Navigator(rclcpp::NodeOptions()) {}
 
 void Navigator::initCommunication()
 {
@@ -121,17 +128,17 @@ void Navigator::timerCallback()
         return;
     }
 
-    RCLCPP_INFO(get_logger(), "Droneport position: (%lf, %lf, %lf)",
+    RCLCPP_DEBUG(get_logger(), "Droneport position: (%lf, %lf, %lf)",
         response->pose_drone.position.x,
         response->pose_drone.position.y,
         response->pose_drone.position.z
     );
-    RCLCPP_INFO(get_logger(), "Droneport ID: %s", droneport_id.c_str());
+    RCLCPP_DEBUG(get_logger(), "Droneport ID: %s", droneport_id.c_str());
     Drone drone{
         droneport_id,
         DroneVMax{30},
         DroneVMin{20},
-        DroneFreeTime{this->now().seconds() + 15}
+        DroneFreeTime{this->now().seconds() + 3}
     };
 
     if (droneport_id != mission.id_from) {
@@ -145,6 +152,7 @@ void Navigator::timerCallback()
         publishGlobalMission(map_mission, response->id, "relocate");
         
         drone.setFreeTime(map_mission.timeFinish);
+        drone.setVertexId(mission.id_from);
     }
 
     auto map_mission = map_.generateMission(
@@ -172,15 +180,17 @@ void Navigator::publishGlobalMission(const Mission& mission,
     msg.id_from = mission.vertexes.front();
     msg.id_to = mission.vertexes.back();
 
-    for (size_t i = 0; i < mission.vertexes.size() - 1; ++i) {
-        auto pose = map_.getVertexPosition(mission.vertexes[i+1]);
+    for (size_t i = 0; i < mission.vertexes.size(); ++i) {
+        auto pose = map_.getVertexPosition(mission.vertexes[i]);
         geometry_msgs::msg::Pose pose_msg;
         pose_msg.position.x = pose.x();
         pose_msg.position.y = pose.y();
         pose_msg.position.z = pose.z();
 
         msg.poses.push_back(pose_msg);
-        msg.velocities.push_back(mission.velocities[i]);
+        if (i < mission.velocities.size()) {
+            msg.velocities.push_back(mission.velocities[i]);
+        }
     }
 
     RCLCPP_INFO(get_logger(), "Publishing global mission: %s from %s to %s", 

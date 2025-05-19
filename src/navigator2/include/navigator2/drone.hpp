@@ -60,6 +60,10 @@ public:
         freeTime.value = new_free_time;
     }
 
+    void setVertexId(const std::string& new_vertex_id) {
+        vertexId = new_vertex_id;
+    }
+
 private:
     virtual void initVoptimal() {
         voptimal.value = (vmax.value + vmin.value) / 2;

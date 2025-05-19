@@ -29,8 +29,6 @@ Panels:
     Name: Time
     SyncMode: 2
     SyncSource: ""
-  - Class: rviz_panel_tutorial::DemoPanel
-    Name: DemoPanel
   - Class: rviz_log_panel::LogPanel
     Name: LogPanel
 Visualization Manager:
@@ -714,7 +712,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 739.0125732421875
+      Distance: 707.5447387695312
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -755,8 +753,6 @@ Visualization Manager:
         Value: Orbit (rviz_default_plugins)
         Yaw: 4.69977331161499
 Window Geometry:
-  DemoPanel:
-    collapsed: false
   Displays:
     collapsed: false
   Height: 1120
@@ -775,4 +771,4 @@ Window Geometry:
     collapsed: false
   Width: 1920
   X: 0
-  Y: 43
+  Y: 62

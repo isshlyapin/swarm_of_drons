@@ -1,4 +1,5 @@
 #include <fastcsv/csv.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include "navigator2/map.hpp"
 #include "navigator2/config.hpp"
@@ -169,14 +170,18 @@ void Map::loadGraphFromCSV(const std::string& filePath) {
 }
 
 void Map::loadEdgesFromCSV(const std::string& filePath) {
+    RCLCPP_INFO(rclcpp::get_logger("Map"), "Loading edges from %s", filePath.c_str());
     io::CSVReader<3> in_csv(filePath);
     in_csv.read_header(io::ignore_extra_column, "index1", "index2", "time_open");
 
+    RCLCPP_INFO(rclcpp::get_logger("Map"), "Reading CSV file...");
     std::string id_from;
     std::string id_to;
     double time_open = 0;
 
     while (in_csv.read_row(id_from, id_to, time_open)) {
+        RCLCPP_INFO(rclcpp::get_logger("Map"), "Adding edge: %s -> %s with time_open %lf", 
+            id_from.c_str(), id_to.c_str(), time_open);
         addEdge(id_from, id_to, time_open);
     }
 }

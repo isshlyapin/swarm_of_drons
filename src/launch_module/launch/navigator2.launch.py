@@ -5,7 +5,6 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, TextSubstitution
 from launch_ros.actions import Node
 
-
 def generate_launch_description():
     # Аргументы
     enable_test_arg = DeclareLaunchArgument(

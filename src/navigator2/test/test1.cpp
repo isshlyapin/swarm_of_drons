@@ -2,8 +2,7 @@
 #include "navigator2/map.hpp"
 #include "navigator2/config.hpp"
 
-using OptimalPathMode = map_cfg::OptimalPathMode;
-
+using map_cfg::OptimalPathMode;
 
 class MapTest : public ::testing::Test {
 protected:

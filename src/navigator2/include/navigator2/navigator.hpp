@@ -23,6 +23,7 @@ public:
     using MsgGlobalMissionPtrT = MsgGlobalMissionT::SharedPtr;
 
     Navigator();
+    explicit Navigator(const rclcpp::NodeOptions& options);
 
 private:
     void initCommunication();
