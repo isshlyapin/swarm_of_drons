@@ -6,9 +6,8 @@
 namespace DroneComposition {
 
 Drone::Drone(const rclcpp::NodeOptions & options)
-: Node("Drone", options)
+: Node("Drone", options), realName(this->get_name())
 {
-    realName = this->get_name();
     model = realName.substr(0, realName.rfind('_'));
     id = std::stoi(realName.substr(realName.rfind('_') + 1));
 
@@ -51,6 +50,14 @@ Drone::Drone(const rclcpp::NodeOptions & options)
         getOdometryTopic(),
         qos_odm
     );
+
+    logsPublisher = create_publisher<std_msgs::msg::String>(
+        "/panel_logs",
+        25
+    );
+
+    RCLCPP_INFO(this->get_logger(), "Drone %s: flight_rate = %g", realName.c_str(), 
+        get_parameter("flight_rate").as_double());
 }
 
 void Drone::flight(Point targetPoint, Vector3 velocity) {
@@ -87,7 +94,7 @@ void Drone::flight(Point targetPoint, Vector3 velocity) {
 
         odometryPublisher->publish(odometry);
 
-        rclcpp::Time tmpTime = this->now();
+        const rclcpp::Time tmpTime = this->now();
         dTime = tmpTime - curTime;
         if (dTime == rclcpp::Duration(0, 0)) {
             continue;
@@ -111,6 +118,7 @@ void Drone::missionHandler(const MsgMissionPtrT msg) {
     RCLCPP_INFO(get_logger(), "Drone %s: Mission started", realName.c_str());
 
     sendReport(DroneState::FLY);
+    sendLog(msg);
 
     if (msg->poses.size() != msg->velocities.size()) {
         RCLCPP_ERROR(this->get_logger(), "Drone %s: Different size mission poses and velocities", realName.c_str());
@@ -143,6 +151,22 @@ void Drone::missionHandler(const MsgMissionPtrT msg) {
     sendReport(DroneState::READY);
 }
 
+void Drone::sendLog(const MsgMissionPtrT msg) {
+    std_msgs::msg::String logMsg;
+    logMsg.data = realName + " ";
+    if (msg->mission_type == "relocate") {
+        logMsg.data += "relocates";
+    } else if (msg->mission_type == "execute") {
+        logMsg.data += "executes mission";
+    } else {
+        logMsg.data += "unknown mission type";
+    }
+    logMsg.data += " from " + msg->id_from + " to " + msg->id_to;
+    logsPublisher->publish(
+        logMsg
+    );
+}
+
 void Drone::sendReport(DroneState state) {
     MsgReportT report;
     report.model = realName.substr(0, realName.rfind('_'));
@@ -157,7 +181,7 @@ void Drone::sendReport(DroneState state) {
     RCLCPP_INFO(get_logger(), "Drone %s: Report sent", realName.c_str());
 }
 
-}
+} // namespace DroneComposition
 
 #include "rclcpp_components/register_node_macro.hpp"
 

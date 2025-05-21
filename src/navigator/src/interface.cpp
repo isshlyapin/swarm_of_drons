@@ -22,14 +22,17 @@ bool GraphInterface::CheckEqualPose(double x1, double y1, double x2, double y2, 
     return false;
 }
 
-void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id) {
+void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMission& mission, int32_t drone_id,
+             const std::string& mission_type) {
     mission.start_time = path.time_start;
-    //RCLCPP_INFO(this->get_logger(), "Tstart: %f", path.time_start.seconds());
+    mission.mission_type = mission_type;
+    mission.id_from = path.route.front()->getName();
+    mission.id_to = path.route.back()->getName();
+
     mission.velocities.clear();
 
     for (size_t i = 0; i < path.velocities.size(); i++) {
         mission.velocities.push_back(static_cast<float>(path.velocities[i]));
-        //RCLCPP_INFO(this->get_logger(), "v[%ld]: %f", i, path.velocities[i]);
     }
     mission.drone_id = drone_id;
     std::vector<std::vector<double>> poses;
@@ -46,7 +49,6 @@ void GraphInterface::fillMsgMission(Route& path, drone_interfaces::msg::GlobalMi
     for (size_t i = 1; i < poses.size(); i++) {
         geometry_msgs::msg::Pose pose;
         pose.position.x = poses[i][0];
-        //RCLCPP_INFO(this->get_logger(), "x: %f y: %f", poses[i][0], poses[i][1]);
         pose.position.y = poses[i][1];
         pose.position.z = poses[i][2];
         mission.poses.push_back(pose);
@@ -119,6 +121,11 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
       RCLCPP_INFO(node->get_logger(), "waiting for service to appear...");
     }
 
+    if (allmissions.empty()) {
+        RCLCPP_INFO(this->get_logger(), "All mission has been planned, waiting for new one...");
+        return;
+    }
+
     auto request = std::make_shared<navigator_interfaces::srv::FreeDrone::Request>();
     std::shared_ptr<Mission> curMission = allmissions.front();
     allmissions.pop();
@@ -152,13 +159,13 @@ void GraphInterface::publicRoutes(std::string NameOfService, double Vmin, double
 
     if (allnodes[numbernode] != curMission->start) {
         curRoute = allnodes[numbernode]->GenRouteTo(curMission->start, allnodes, Tstart, Vmin, Vmax);    
-        fillMsgMission( curRoute, sendMission, result->id);
+        fillMsgMission( curRoute, sendMission, result->id, "relocate");
         mission_publisher->publish(sendMission);
     }
 
     curRoute = curMission->start->GenRouteTo(curMission->finish, allnodes, curRoute.time_finish + Tdelay, Vmin, Vmax);
 
-    fillMsgMission(curRoute, sendMission, result->id);
+    fillMsgMission(curRoute, sendMission, result->id, "execute");
 
     mission_publisher->publish(sendMission);
 }

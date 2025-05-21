@@ -9,7 +9,7 @@ def generate_launch_description():
     map_file_arg = DeclareLaunchArgument(
         'map_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test2/map.csv'
+            text='/workspaces/swarm_of_drons/tests/test4/map.csv'
         )
     )
 
