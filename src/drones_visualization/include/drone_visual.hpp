@@ -32,6 +32,10 @@ public:
         return drone_id + "/visual/path";
     }
 
+    std::string getTextMarkersTopic() {
+        return std::string{"/text_markers"};
+    }
+
 private:
     void communicationInit();
 
@@ -50,6 +54,7 @@ private:
 
     MsgPathT path;
     MsgMarkerT marker;
+    MsgMarkerT text_marker;
     
     rclcpp::Publisher<MsgPathT>::SharedPtr pathPublisher;
     rclcpp::Publisher<MsgMarkerT>::SharedPtr markerPublisher;

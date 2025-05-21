@@ -61,14 +61,27 @@ void DroneVisual::initMarker() {
     marker.id = std::stoi(drone_id.substr(drone_id.rfind('_') + 1));
     marker.type = MsgMarkerT::SPHERE;
     marker.action = MsgMarkerT::ADD;
-    marker.scale.x = 10.0; // Line width
-    marker.scale.y = 10.0; // Line width
-    marker.scale.z = 10.0; // Line width
-    marker.color.r = 1.0f; // Red color
+    marker.scale.x = 10.0;
+    marker.scale.y = 10.0;
+    marker.scale.z = 10.0;
+    marker.color.r = 1.0f;
     marker.color.g = 0.0f;
     marker.color.b = 0.0f;
-    marker.color.a = 1.0f; // Fully opaque
-    marker.lifetime = rclcpp::Duration(0, 0); // No lifetime
+    marker.color.a = 1.0f;
+    marker.lifetime = rclcpp::Duration(0, 0);
+
+    // Текстовая метка
+    text_marker.ns = "drones";
+    text_marker.id = marker.id + 1000; // уникальный id для текста
+    text_marker.type = MsgMarkerT::TEXT_VIEW_FACING;
+    text_marker.action = MsgMarkerT::ADD;
+    text_marker.scale.z = 8.0;
+    text_marker.color.r = 1.0f;
+    text_marker.color.g = 1.0f;
+    text_marker.color.b = 1.0f;
+    text_marker.color.a = 1.0f;
+    text_marker.lifetime = rclcpp::Duration(0, 0);
+    text_marker.text = drone_id;
 }
 
 void DroneVisual::updateMarker(const MsgDroneOdometryPtrT msg) {
@@ -76,6 +89,12 @@ void DroneVisual::updateMarker(const MsgDroneOdometryPtrT msg) {
     marker.pose.position.x = msg->pose.pose.position.x;
     marker.pose.position.y = msg->pose.pose.position.y;
     marker.pose.position.z = msg->pose.pose.position.z;
+
+    // Текстовая метка — выше сферы
+    text_marker.header = msg->header;
+    text_marker.pose.position.x = msg->pose.pose.position.x;
+    text_marker.pose.position.y = msg->pose.pose.position.y;
+    text_marker.pose.position.z = msg->pose.pose.position.z - marker.scale.z * 1.2;
 }
 
 void DroneVisual::updatePath(const MsgDroneOdometryPtrT msg) {
@@ -100,7 +119,8 @@ void DroneVisual::odometryHandler(const MsgDroneOdometryPtrT msg) {
     if (count++ % coeff == 0) {
         updateMarker(msg);
         markerPublisher->publish(marker);
-    
+        markerPublisher->publish(text_marker);
+
         updatePath(msg);
         pathPublisher->publish(path);
     }
