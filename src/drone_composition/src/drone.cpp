@@ -1,4 +1,7 @@
+#include <sys/types.h>
+
 #include <magic_enum.hpp>
+#include <Eigen/Geometry>
 #include <rclcpp/rclcpp.hpp>
 
 #include "drone_composition/drone.hpp"
@@ -14,6 +17,7 @@ Drone::Drone(const rclcpp::NodeOptions & options)
     RCLCPP_INFO(this->get_logger(), "Drone %s: Created", realName.c_str());
 
     declare_parameter("flight_rate", 50.0);
+    declare_parameter("time_scale", 1.0);
     declare_parameter("qos_report_publisher", 25);
     declare_parameter("qos_odometry_publisher", 100);
     declare_parameter("qos_mission_subscription", 10);
@@ -69,7 +73,8 @@ void Drone::flight(Point targetPoint, Vector3 velocity) {
     rclcpp::Time curTime = this->now();
 
     rclcpp::Rate rate{
-        get_parameter("flight_rate").as_double(),
+        get_parameter("flight_rate").as_double() *
+        get_parameter("time_scale").as_double(),
         this->get_clock()
     };
 
@@ -120,8 +125,29 @@ void Drone::missionHandler(const MsgMissionPtrT msg) {
     sendReport(DroneState::FLY);
     sendLog(msg);
 
+    if (msg->poses.size() == msg->velocities.size() + 1) {
+        Point startPoint{
+            msg->poses[0].position.x, 
+            msg->poses[0].position.y,
+            msg->poses[0].position.z
+        };
+        if ((startPoint - currentPosition).squaredNorm() > 1) {
+            RCLCPP_ERROR(get_logger(), "Drone %s: Start point is not current position", realName.c_str());
+            RCLCPP_ERROR(get_logger(), "Drone %s: current position: [%.2f, %.2f, %.2f]", 
+                realName.c_str(), currentPosition.x(), currentPosition.y(), currentPosition.z());
+            RCLCPP_ERROR(get_logger(), "Drone %s: start point: [%.2f, %.2f, %.2f]",
+                realName.c_str(), startPoint.x(), startPoint.y(), startPoint.z());
+
+            sendReport(DroneState::ERROR);
+            return;
+        }
+
+        msg->poses.erase(msg->poses.begin());
+    }
+    
     if (msg->poses.size() != msg->velocities.size()) {
-        RCLCPP_ERROR(this->get_logger(), "Drone %s: Different size mission poses and velocities", realName.c_str());
+        RCLCPP_ERROR(get_logger(), "Drone %s: Invalid mission data", realName.c_str());
+        sendReport(DroneState::ERROR);
         return;
     }
     

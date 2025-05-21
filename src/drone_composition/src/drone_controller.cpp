@@ -22,6 +22,7 @@ DroneController::DroneController(const rclcpp::NodeOptions& options)
 
     declare_parameter("drones_file", "");
     declare_parameter("find_free_drone_rate", 0.2);
+    declare_parameter("free_drone_service_qos_depth", 10);
 
     communicationInit();    
     
@@ -32,7 +33,7 @@ void DroneController::communicationInit() {
     RCLCPP_INFO(this->get_logger(), "DroneController: Global mission subscription init");
     globalMissionSubscription = create_subscription<MsgGlobalMissionT>(
         "global_mission",
-        get_parameter("glob_miss_qos").as_int(),
+        this->get_parameter_or("glob_miss_qos", 100),
         [this](const MsgGlobalMissionPtrT msg) {
             this->globalMissionHandler(msg);
         }
@@ -47,7 +48,7 @@ void DroneController::communicationInit() {
                      std::shared_ptr<SrvFreeDroneResponseT> response) {
             this->freeDroneSrvHandler(request, response);
         },
-        10,
+        get_parameter("free_drone_service_qos_depth").as_int(),
         freeDroneSrvCallbackGroup
     );
 }
@@ -209,13 +210,21 @@ void DroneController::globalMissionHandler(const MsgGlobalMissionPtrT msg) {
         [this, msg, mission]() {
             if (this->now() < msg->start_time) {
                 RCLCPP_INFO(this->get_logger(), "DroneController: Waiting for start time");
+                RCLCPP_INFO(this->get_logger(), "DroneController: Start time: %d; now: %lf", 
+                    msg->start_time.sec, this->now().seconds());
                 rclcpp::Rate{
                     rclcpp::Time(msg->start_time) - this->now(),
                     this->get_clock()
                 }.sleep();
             }
             RCLCPP_INFO(this->get_logger(), "DroneController: Mission for drone [%d] published", msg->drone_id);
+            if (drones[msg->drone_id]->getState() != DroneState::READY) {
+                RCLCPP_ERROR(this->get_logger(), "DroneController: Drone [%d] is not ready", msg->drone_id);
+                return;
+            }
             drones[msg->drone_id]->missionPublisher->publish(mission);
+            RCLCPP_DEBUG(this->get_logger(), "DroneController: Start time: %d; now: %lf", 
+                msg->start_time.sec, this->now().seconds());
         }
     }.detach();
 }
@@ -244,7 +253,7 @@ void DroneController::reportHandler(const Drone::MsgReportPtrT msg) {
     }
 }
 
-void DroneController::odometryHandler(const Drone::MsgOdometryPtrT msg, int droneId) {}
+void DroneController::odometryHandler(const Drone::MsgOdometryPtrT /*msg*/, int /*droneId*/) {}
 
 } // namespace DroneComposition
 

@@ -58,7 +58,7 @@ void GraphInterface::init(const std::string& pathToGraph, const std::string& pat
     io::CSVReader<4> graphcsv(pathToGraph);
     io::CSVReader<3> edgescsv(pathToEdges);
     graphcsv.read_header(io::ignore_extra_column, "index", "x", "y", "z");
-    edgescsv.read_header(io::ignore_extra_column, "index1", "index2", "echelon");
+    edgescsv.read_header(io::ignore_extra_column, "index1", "index2", "time_open");
 
     std::string index; 
     double x; double y; double z;
