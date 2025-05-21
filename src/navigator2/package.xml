@@ -25,7 +25,6 @@
   <test_depend>launch_testing</test_depend>
   <test_depend>launch_testing_ament_cmake</test_depend>
   <test_depend>rclpy</test_depend>
-  <test_depend>turtlesim</test_depend>
   <test_depend>std_msgs</test_depend>
   <test_depend>std_srvs</test_depend>
   <test_depend>clock_simulation</test_depend>
