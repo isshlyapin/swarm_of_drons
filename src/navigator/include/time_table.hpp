@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rclcpp/time.hpp>
 #include <vector>
 #include <utility>
 #include <rclcpp/rclcpp.hpp>
@@ -26,11 +27,15 @@ public:
     void ClearTimes();
     size_t getSize() const;
     const std::pair<rclcpp::Time, rclcpp::Time>& getTime(size_t index) const;
-    void editTime(size_t index, rclcpp::Time& t1, rclcpp::Time& t2);
 
-    static rclcpp::Time TimeFloatToRCL(float time);
+    static rclcpp::Time TimeFloatToRCL(double time);
     static bool isInfinity(rclcpp::Time& time);
+    static bool isFirstTimeBigger(const rclcpp::Time& time1, const rclcpp::Time& time2);
+    static bool isTimesEqual(const rclcpp::Time& time1, const rclcpp::Time& time2);
+    static bool isFirstBiggerOrEq(const rclcpp::Time& time1, const rclcpp::Time& time2);
     bool isTimeInTimes(std::pair<rclcpp::Time, rclcpp::Time>& time);
+    bool isTimeIn(rclcpp::Time time1);
+    bool checkCollisions(std::pair<rclcpp::Time, rclcpp::Time> time);
 
     const std::vector<std::pair<rclcpp::Time, rclcpp::Time>>& getTimes() const;
 

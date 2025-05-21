@@ -9,7 +9,7 @@ def generate_launch_description():
     missions_file = DeclareLaunchArgument(
         'mfile', 
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/test/test2/missions.json'
+            text='/workspaces/swarm_of_drons/tests/test4/missions.json'
         )
     )
 

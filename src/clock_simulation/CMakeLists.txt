@@ -13,6 +13,11 @@ find_package(rosgraph_msgs REQUIRED)
 find_package(clock_simulation_interfaces REQUIRED)
 
 add_executable(sim_clock src/sim_clock.cpp)
+target_include_directories(sim_clock
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 ament_target_dependencies(sim_clock
   rclcpp
   std_srvs
@@ -24,17 +29,5 @@ install(TARGETS
   sim_clock
   DESTINATION lib/${PROJECT_NAME}
 )
-
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
 
 ament_package()

@@ -22,6 +22,7 @@ DroneController::DroneController(const rclcpp::NodeOptions& options)
 
     declare_parameter("drones_file", "");
     declare_parameter("find_free_drone_rate", 0.2);
+    declare_parameter("free_drone_service_qos_depth", 10);
 
     communicationInit();    
     
@@ -32,19 +33,23 @@ void DroneController::communicationInit() {
     RCLCPP_INFO(this->get_logger(), "DroneController: Global mission subscription init");
     globalMissionSubscription = create_subscription<MsgGlobalMissionT>(
         "global_mission",
-        get_parameter("glob_miss_qos").as_int(),
+        this->get_parameter_or("glob_miss_qos", 100),
         [this](const MsgGlobalMissionPtrT msg) {
             this->globalMissionHandler(msg);
         }
     );
 
-    RCLCPP_INFO(this->get_logger(), "DroneController: Free drone service init");    
+    RCLCPP_INFO(this->get_logger(), "DroneController: Free drone service init");
+    freeDroneSrvCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  
     freeDroneService = this->create_service<SrvFreeDroneT>(
         "free_drone_service",
         [this](const std::shared_ptr<SrvFreeDroneRequestT> request,
                      std::shared_ptr<SrvFreeDroneResponseT> response) {
             this->freeDroneSrvHandler(request, response);
-        }
+        },
+        get_parameter("free_drone_service_qos_depth").as_int(),
+        freeDroneSrvCallbackGroup
     );
 }
 
@@ -118,6 +123,7 @@ void DroneController::freeDroneSrvHandler (
     const std::shared_ptr<SrvFreeDroneRequestT> request,
           std::shared_ptr<SrvFreeDroneResponseT> response )
 {
+    RCLCPP_INFO(this->get_logger(), "DroneController: Start find free drones");
     std::vector<std::shared_ptr<DroneContext>> freeDrones;
     findFreeDrones(freeDrones);
     
@@ -196,24 +202,36 @@ void DroneController::globalMissionHandler(const MsgGlobalMissionPtrT msg) {
     mission.poses      = msg->poses;
     mission.start_time = msg->start_time;
     mission.velocities = msg->velocities;
+    mission.mission_type = msg->mission_type;
+    mission.id_from   = msg->id_from;
+    mission.id_to     = msg->id_to;
 
     std::thread{
         [this, msg, mission]() {
             if (this->now() < msg->start_time) {
                 RCLCPP_INFO(this->get_logger(), "DroneController: Waiting for start time");
+                RCLCPP_INFO(this->get_logger(), "DroneController: Start time: %d; now: %lf", 
+                    msg->start_time.sec, this->now().seconds());
                 rclcpp::Rate{
                     rclcpp::Time(msg->start_time) - this->now(),
                     this->get_clock()
                 }.sleep();
             }
             RCLCPP_INFO(this->get_logger(), "DroneController: Mission for drone [%d] published", msg->drone_id);
+            if (drones[msg->drone_id]->getState() != DroneState::READY) {
+                RCLCPP_ERROR(this->get_logger(), "DroneController: Drone [%d] is not ready", msg->drone_id);
+                return;
+            }
             drones[msg->drone_id]->missionPublisher->publish(mission);
+            RCLCPP_DEBUG(this->get_logger(), "DroneController: Start time: %d; now: %lf", 
+                msg->start_time.sec, this->now().seconds());
         }
     }.detach();
 }
 
 void DroneController::reportHandler(const Drone::MsgReportPtrT msg) {
     if (drones.find(msg->id) == drones.end()) {
+        RCLCPP_INFO(this->get_logger(), "DroneController: Report message for unknown drone");
         return;
     }
 
@@ -235,7 +253,7 @@ void DroneController::reportHandler(const Drone::MsgReportPtrT msg) {
     }
 }
 
-void DroneController::odometryHandler(const Drone::MsgOdometryPtrT msg, int droneId) {}
+void DroneController::odometryHandler(const Drone::MsgOdometryPtrT /*msg*/, int /*droneId*/) {}
 
 } // namespace DroneComposition
 

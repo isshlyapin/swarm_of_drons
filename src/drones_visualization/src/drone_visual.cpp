@@ -16,6 +16,9 @@ DroneVisual::DroneVisual(const std::string &drone_id)
     declare_parameter("vis_path_qos", 25);
     declare_parameter("vis_marker_qos", 25);
 
+    declare_parameter("flight_rate", 50.0);
+    declare_parameter("time_scale", 1.0);
+
     communicationInit();
     initMarker();
 }
@@ -84,11 +87,23 @@ void DroneVisual::updatePath(const MsgDroneOdometryPtrT msg) {
 }
 
 void DroneVisual::odometryHandler(const MsgDroneOdometryPtrT msg) {
-    updateMarker(msg);
-    markerPublisher->publish(marker);
+    static const int coeff = std::max(
+        1, 
+        static_cast<int>(
+            get_parameter("flight_rate").as_double() / 30 / 
+            get_parameter("time_scale").as_double()
+        )
+    );
 
-    updatePath(msg);
-    pathPublisher->publish(path);
+    static int count = 0;
+
+    if (count++ % coeff == 0) {
+        updateMarker(msg);
+        markerPublisher->publish(marker);
+    
+        updatePath(msg);
+        pathPublisher->publish(path);
+    }
 }
 
 void DroneVisual::reportHandler(const MsgDroneReportPtrT msg) {

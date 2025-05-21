@@ -6,7 +6,7 @@ package_name = 'launch_module'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.1.0',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -19,9 +19,9 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
+    maintainer='isshlyapin',
     maintainer_email='shlyapin2005@gmail.com',
-    description='TODO: Package description',
+    description='Module with description launch files',
     license='MIT',
     tests_require=['pytest'],
     entry_points={

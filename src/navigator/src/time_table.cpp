@@ -2,8 +2,12 @@
 #include <cstddef>
 #include <cstdio>
 #include <cmath>
+#include <rcl/time.h>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
+#include <rclcpp/time.hpp>
 
-rclcpp::Time TimeTable::infinity = rclcpp::Time(std::numeric_limits<int32_t>::max() - 1, std::numeric_limits<uint32_t>::max() - 1);
+rclcpp::Time TimeTable::infinity = rclcpp::Time(std::numeric_limits<int32_t>::max() - 10, std::numeric_limits<uint32_t>::max() - 1, RCL_ROS_TIME);
 
 TimeTable::TimeTable() = default;
 
@@ -21,66 +25,73 @@ TimeTable& TimeTable::operator+=(const TimeTable& other) {
 }
 
 void TimeTable::AppendTime(std::pair<rclcpp::Time, rclcpp::Time> time) {
-    if (time.second < time.first) {
-        RCLCPP_ERROR(rclcpp::get_logger("my_logger"), "time interval is incorrect in AppendTime");
+    if (isFirstTimeBigger(time.first, time.second)) {
+        RCLCPP_ERROR(rclcpp::get_logger("graph"), "time interval is incorrect in AppendTime");
+        return;
+    } else if (time.first.get_clock_type() != 1 || time.second.get_clock_type() != 1) {
+        RCLCPP_ERROR(rclcpp::get_logger("graph"), "Not sim time in CalcPossTimeEdgeAndNode");
         return;
     }
 
     size_t i1 = 0;
-    while ( (i1 < times.size()) && (time.first  > times[i1].second) ) i1++;
+    while ( (i1 < times.size()) && (isFirstTimeBigger(time.first, times[i1].second)) ) {i1++;}
     size_t i2 = i1;
-    while ( (i2 < times.size()) && (time.second >= times[i2].first) ) i2++;
-    // printf("i1: %ld\n", i1);
-    // printf("i2: %ld\n", i2);
-    // printf("first time:  %f\n", time.first.seconds());
-    // printf("second time: %f\n", time.second.seconds());
+    while ( (i2 < times.size()) && (isFirstTimeBigger(time.second, times[i2].first)) ) {i2++;}
+
+    if ((i2 < times.size()) && isTimesEqual(time.second, times[i2].first)) i2++;
+
     if (i1 == i2) times.insert(times.begin() + i1, time);
     else {
-        if (time.first  > times[i1].first)  time.first  = times[i1].first;
-        if (i2 < times.size() && time.second < times[i2].second) time.second = times[i2].second;
+        if (isFirstTimeBigger(time.first, times[i1].first))  time.first  = times[i1].first;
+        if (isFirstBiggerOrEq(times[i2 - 1].second, time.second)) time.second = times[i2 - 1].second;
         times.insert(times.begin() + i1, time);
         times.erase(times.begin() + i1 + 1, times.begin() + i2 + 1);
     }
-    // printf("In times first:  %f\n", times[0].first.seconds());
-    // printf("In times second: %f\n", times[0].second.seconds());
 }
 
 void TimeTable::DeleteTime(const std::pair<rclcpp::Time, rclcpp::Time>& time) {
-    if (time.second < time.first) {
+    if (isFirstTimeBigger(time.first, time.second)) {
         RCLCPP_ERROR(rclcpp::get_logger("my_logger"), "time interval is incorrect in DeleteTime");
+        return;
+    } else if (time.first.get_clock_type() != 1 || time.second.get_clock_type() != 1) {
+        RCLCPP_ERROR(rclcpp::get_logger("graph"), "Not sim time in CalcPossTimeEdgeAndNode");
         return;
     }
 
     size_t i1 = 0;
-    while ( (i1 < times.size()) && (time.first  > times[i1].second) ) i1++;
+    while ( (i1 < times.size()) && (isFirstTimeBigger(time.first, times[i1].second)) ) i1++;
     size_t i2 = i1;
-    while ( (i2 < times.size()) && (time.second >= times[i2].first) ) i2++;
+    while ( (i2 < times.size()) && (isFirstTimeBigger(time.second, times[i2].first)) ) i2++;
 
     if (i2 - 1 == i1) {
-        if (time.first > times[i1].first && time.second < times[i1].second) {
+        if (isFirstTimeBigger(time.first, times[i1].first) &&
+            isFirstTimeBigger(times[i1].second, time.second)) {
             std::pair<rclcpp::Time, rclcpp::Time> t1 = {times[i1].first, time.first};
             times.insert(times.begin() + i1, t1);
             times[i1 + 1].first = time.second;
-        } else if (time.first > times[i1].first && time.second >= times[i1].second) {
+        } else if ( isFirstTimeBigger(time.first, times[i1].first) &&
+                    isFirstBiggerOrEq(time.second, times[i1].second)) {
             times[i1].second = time.first;
-        } else if (time.second < times[i1].second) {
+        } else if ( isFirstTimeBigger(time.second, times[i1].first) &&
+                    isFirstTimeBigger(times[i1].second, time.second)) {
             times[i1].first = time.second;
         } else {
             times.erase(times.begin() + i1);
         }
     }
-    else if (i2 - 1 > i1) {
-        if (time.first > times[i1].first) {
+    else if (i2 > 0 && i2 - 1 > i1) {
+        if ( isFirstTimeBigger(time.first, times[i1].first) &&
+             isFirstTimeBigger(times[i1].second, time.first)) {
             times[i1].second = time.first;
             i1++;
         }
-        if ( (i2 < times.size()) &&
-            (time.second < times[i2 - 1].second && time.second != times[i2 - 1].first) ) {
-            times[i2 - 1].second = time.second;
+        if (isFirstTimeBigger(times[i2 - 1].second, time.second) &&
+            isFirstTimeBigger(time.second, times[i2 - 1].first)) {
+            times[i2 - 1].first = time.second;
             i2--;
         }
         if (i2 >= i1) {
-            times.erase(times.begin() + i1, times.begin() + i2 + 1);
+            times.erase(times.begin() + i1, times.begin() + i2);
         }
     }
 }
@@ -102,8 +113,15 @@ TimeTable& TimeTable::operator=(TimeTable& other) {
 }
 
 bool TimeTable::operator==(const TimeTable& other) const {
-    if (other.getTimes() == times) return true;
-    return false;
+    if (times.size() != other.getSize()) return false;
+
+    for (size_t i = 0; i < times.size(); i++) {
+        if (!isTimesEqual(times[i].first,  other.getTime(i).first) ||
+            !isTimesEqual(times[i].second, other.getTime(i).second)) {
+                return false;
+            }
+    }
+    return true;
 }
 
 bool TimeTable::operator!=(const TimeTable& other) const {
@@ -121,29 +139,22 @@ const std::pair<rclcpp::Time, rclcpp::Time>& TimeTable::getTime(size_t index) co
     return times[index];
 }
 
-void TimeTable::editTime(size_t index, rclcpp::Time& t1, rclcpp::Time& t2) {
-    if (index >= times.size()) {
-        RCLCPP_ERROR(rclcpp::get_logger("timetable"), "Wrong index in editTime");
-    }
-    DeleteTime(times[index]);
-    std::pair<rclcpp::Time, rclcpp::Time> time = {t1, t2};
-    AppendTime(time);
-}
-
-rclcpp::Time TimeTable::TimeFloatToRCL(float time) {
+rclcpp::Time TimeTable::TimeFloatToRCL(double time) {
     int inttime = time;
     if (time < 0) return infinity;
-    return rclcpp::Time( inttime * 1e9 + (int)( (time - inttime) * 1e9) );
+    return rclcpp::Time( inttime * 1e9 + (int)( (time - inttime) * 1e9), RCL_ROS_TIME );
 }
 
 bool TimeTable::isInfinity(rclcpp::Time& time) {
-    if (time == infinity) return true;
+    double eps = 1;
+    if (time.seconds() + eps >= infinity.seconds()) return true;
     return false;
 }
 
 bool TimeTable::isTimeInTimes(std::pair<rclcpp::Time, rclcpp::Time>& time) {
     for (size_t i = 0; i < times.size(); i++) {
-        if (time.first >= times[i].first && time.second <= times[i].second) {
+        if ( isFirstTimeBigger(time.first, times[i].first) && 
+             isFirstTimeBigger(times[i].second, time.second)) {
             return true;
         }
     }
@@ -151,8 +162,42 @@ bool TimeTable::isTimeInTimes(std::pair<rclcpp::Time, rclcpp::Time>& time) {
 }
 
 void TimeTable::PrintTimes() const {
-    for (size_t i = 0; i < times.size(); ++i) {
+    RCLCPP_INFO(rclcpp::get_logger("graph"), "Start printing times:");
+    for (size_t i = 0; i < times.size(); i++) {
         RCLCPP_INFO(rclcpp::get_logger("my_logger"), "[%f, %f]",
             times[i].first.seconds(), times[i].second.seconds());
     }
+    RCLCPP_INFO(rclcpp::get_logger("graph"), "End printing times");
+}
+
+bool TimeTable::isFirstTimeBigger(const rclcpp::Time& time1, const rclcpp::Time& time2) {
+    double eps = 1e-3;
+    return (time1.seconds() >= time2.seconds() + eps);
+}
+
+bool TimeTable::isTimesEqual(const rclcpp::Time& time1, const rclcpp::Time& time2) {
+    double eps = 1e-3;
+    return (   (time1.seconds() - eps) <= time2.seconds()
+            && time2.seconds() <= (time1.seconds() + eps));
+}
+
+bool TimeTable::isFirstBiggerOrEq(const rclcpp::Time& time1, const rclcpp::Time& time2) {
+    return (isFirstTimeBigger(time1, time2) || isTimesEqual(time1, time2));
+}
+
+bool TimeTable::isTimeIn(rclcpp::Time time) {
+    for (size_t i = 0; i < times.size(); i++) {
+        if ( isFirstTimeBigger(time, times[i].first) && 
+                isFirstTimeBigger(times[i].second, time)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TimeTable::checkCollisions(std::pair<rclcpp::Time, rclcpp::Time> time) {
+    TimeTable news = *this;
+    news.DeleteTime(time);
+    if (this->getTimes() == news.getTimes()) return false;
+    return true;
 }
