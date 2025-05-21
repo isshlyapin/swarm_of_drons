@@ -1,11 +1,23 @@
+#include <string>
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
 #include "navigator2/map.hpp"
 #include "navigator2/mission_manager.hpp"
 
+namespace fs = std::filesystem;
+
+/// Получить путь к тестовому файлу относительно текущего файла
+std::string get_test_file(const std::string &relative_path)
+{
+  fs::path test_dir = fs::path(__FILE__).parent_path() / "../../../tests/test5";
+  return (test_dir / relative_path).lexically_normal().string();
+}
+
 TEST(MapConfigLoad, LoadGraphFromCSV) {
     Map map;
-    map.loadGraphFromCSV("/workspaces/swarm_of_drons/tests/test5/graph.csv");
+    map.loadGraphFromCSV(get_test_file("graph.csv"));
 
     EXPECT_EQ(map.size(), 4);
     EXPECT_NO_THROW(map.getVertexPosition("d1"));
@@ -21,8 +33,8 @@ TEST(MapConfigLoad, LoadGraphFromCSV) {
 
 TEST(MapConfigLoad, LoadEdgesFromCSV) {
     Map map;
-    map.loadGraphFromCSV("/workspaces/swarm_of_drons/tests/test5/graph.csv");
-    map.loadEdgesFromCSV("/workspaces/swarm_of_drons/tests/test5/edges.csv");
+    map.loadGraphFromCSV(get_test_file("graph.csv"));
+    map.loadEdgesFromCSV(get_test_file("edges.csv"));
 
     EXPECT_EQ(map.size(), 4);
     EXPECT_TRUE(map.getVertexes().at("d1")->isHasNeighbors());
@@ -41,7 +53,7 @@ TEST(MapConfigLoad, LoadEdgesFromCSV) {
 
 TEST(MissionManagerConfigLoad, LoadMissionsFromCSV) {
     MissionManager mm;
-    mm.loadMissionsFromCSV("/workspaces/swarm_of_drons/tests/test5/missions.csv");
+    mm.loadMissionsFromCSV(get_test_file("missions.csv"));
 
     EXPECT_FALSE(mm.empty());
 

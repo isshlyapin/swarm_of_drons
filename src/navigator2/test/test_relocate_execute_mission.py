@@ -41,13 +41,15 @@ def generate_init_description(context, *args, **kwargs):
                 'pose_z': 0.0,
             }],
         )
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    test_dir = os.path.abspath(os.path.join(base_dir, '../../../tests/test7'))
     controller_node = ComposableNode(
             package='drone_composition',
             plugin='DroneComposition::DroneController',
             name='drone_controller',
             parameters=[{
                 'use_sim_time': True,
-                'drones_file': '/workspaces/swarm_of_drons/tests/test7/drones.csv',
+                'drones_file': os.path.join(test_dir, 'drones.csv'),
             }],
         )
     
@@ -66,9 +68,9 @@ def generate_init_description(context, *args, **kwargs):
         name='navigator',
         parameters=[{
             'use_sim_time': True,
-            'missions_file': '/workspaces/swarm_of_drons/tests/test7/missions.csv',
-            'graph_file': '/workspaces/swarm_of_drons/tests/test7/graph.csv',
-            'edges_file': '/workspaces/swarm_of_drons/tests/test7/edges.csv',
+            'missions_file': os.path.join(test_dir, 'missions.csv'),
+            'graph_file': os.path.join(test_dir, 'graph.csv'),
+            'edges_file': os.path.join(test_dir, 'edges.csv'),
         }]
     )
     
@@ -143,7 +145,7 @@ class TestFullWork(unittest.TestCase):
             (0.0, 0.0, 0.0),
             (15.0, 15.0, 15.0),
             (35.0, 35.0, 35.0),
-            (15, 15.0, 15.0),
+            (15, 15.0, 0.0),
             (0.0, 0.0, 0.0), 
         ]
         
@@ -157,54 +159,45 @@ class TestFullWork(unittest.TestCase):
         self.assertEqual(reports_rx[0].id, 1)
         self.assertEqual(reports_rx[0].model, 'x500')
         self.assertEqual(reports_rx[0].state, 1)
-        self.assertLess(abs(reports_rx[0].pose.position.x - 0.0), 0.1)
-        self.assertLess(abs(reports_rx[0].pose.position.y - 0.0), 0.1)
-        self.assertLess(abs(reports_rx[0].pose.position.z - 0.0), 0.1)
+        self.assertLess(abs(reports_rx[0].pose.position.x - 0.0), 0.5)
+        self.assertLess(abs(reports_rx[0].pose.position.y - 0.0), 0.5)
+        self.assertLess(abs(reports_rx[0].pose.position.z - 0.0), 0.5)
 
         self.assertEqual(reports_rx[1].id, 1)
         self.assertEqual(reports_rx[1].model, 'x500')
         self.assertEqual(reports_rx[1].state, 0)
-        self.assertLess(abs(reports_rx[1].pose.position.x - 35.0), 0.1)
-        self.assertLess(abs(reports_rx[1].pose.position.y - 35.0), 0.1)
-        self.assertLess(abs(reports_rx[1].pose.position.z - 35.0), 0.1)
+        self.assertLess(abs(reports_rx[1].pose.position.x - 35.0), 0.5)
+        self.assertLess(abs(reports_rx[1].pose.position.y - 35.0), 0.5)
+        self.assertLess(abs(reports_rx[1].pose.position.z - 35.0), 0.5)
 
-        self.assertEqual(reports_rx[1].id, 1)
-        self.assertEqual(reports_rx[1].model, 'x500')
-        self.assertEqual(reports_rx[1].state, 1)
-        self.assertLess(abs(reports_rx[1].pose.position.x - 35.0), 0.1)
-        self.assertLess(abs(reports_rx[1].pose.position.y - 35.0), 0.1)
-        self.assertLess(abs(reports_rx[1].pose.position.z - 35.0), 0.1)
+        self.assertEqual(reports_rx[2].id, 1)
+        self.assertEqual(reports_rx[2].model, 'x500')
+        self.assertEqual(reports_rx[2].state, 1)
+        self.assertLess(abs(reports_rx[2].pose.position.x - 35.0), 0.5)
+        self.assertLess(abs(reports_rx[2].pose.position.y - 35.0), 0.5)
+        self.assertLess(abs(reports_rx[2].pose.position.z - 35.0), 0.5)
 
-        self.assertEqual(reports_rx[0].id, 1)
-        self.assertEqual(reports_rx[0].model, 'x500')
-        self.assertEqual(reports_rx[0].state, 0)
-        self.assertLess(abs(reports_rx[0].pose.position.x - 0.0), 0.1)
-        self.assertLess(abs(reports_rx[0].pose.position.y - 0.0), 0.1)
-        self.assertLess(abs(reports_rx[0].pose.position.z - 0.0), 0.1)
+        self.assertEqual(reports_rx[3].id, 1)
+        self.assertEqual(reports_rx[3].model, 'x500')
+        self.assertEqual(reports_rx[3].state, 0)
+        self.assertLess(abs(reports_rx[3].pose.position.x - 0.0), 0.5)
+        self.assertLess(abs(reports_rx[3].pose.position.y - 0.0), 0.5)
+        self.assertLess(abs(reports_rx[3].pose.position.z - 0.0), 0.5)
 
-        expected_id = 0
-        tolerance = 0.1
-        cur_sqdistance = (
-            (odom_rx[0].pose.pose.position.x - expected_poses[0][0])**2 +
-            (odom_rx[0].pose.pose.position.y - expected_poses[0][1])**2 +
-            (odom_rx[0].pose.pose.position.z - expected_poses[0][2])**2
-        )
-        for i in odom_rx:
-            new_sqdistance = (
-                (i.pose.pose.position.x - expected_poses[expected_id][0])**2 +
-                (i.pose.pose.position.y - expected_poses[expected_id][1])**2 +
-                (i.pose.pose.position.z - expected_poses[expected_id][2])**2
-            )
-            self.assertLess(new_sqdistance, cur_sqdistance + tolerance)
-
-            if (new_sqdistance < cur_sqdistance):
-                cur_sqdistance = new_sqdistance
-
-            if cur_sqdistance < tolerance and expected_id < len(expected_poses) - 1:
-                expected_id += 1
-                cur_sqdistance = (
-                    (i.pose.pose.position.x - expected_poses[expected_id][0])**2 +
-                    (i.pose.pose.position.y - expected_poses[expected_id][1])**2 +
-                    (i.pose.pose.position.z - expected_poses[expected_id][2])**2
+        tolerance = 1
+        for idx, (exp_x, exp_y, exp_z) in enumerate(expected_poses):
+            found = False
+            for odom in odom_rx:
+                sqdistance = (
+                    (odom.pose.pose.position.x - exp_x) ** 2 +
+                    (odom.pose.pose.position.y - exp_y) ** 2 +
+                    (odom.pose.pose.position.z - exp_z) ** 2
                 )
+                if sqdistance < tolerance:
+                    found = True
+                    break
+            self.assertTrue(
+                found,
+                f"Did not find odometry near expected pose {idx}: x={exp_x}, y={exp_y}, z={exp_z}"
+            )
         

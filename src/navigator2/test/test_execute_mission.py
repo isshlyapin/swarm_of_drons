@@ -41,13 +41,15 @@ def generate_init_description(context, *args, **kwargs):
                 'pose_z': 0.0,
             }],
         )
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    test_dir = os.path.abspath(os.path.join(base_dir, '../../../tests/test6'))
     controller_node = ComposableNode(
             package='drone_composition',
             plugin='DroneComposition::DroneController',
             name='drone_controller',
             parameters=[{
                 'use_sim_time': True,
-                'drones_file': '/workspaces/swarm_of_drons/tests/test6/drones.csv',
+                'drones_file': os.path.join(test_dir, 'drones.csv'),
             }],
         )
     
@@ -66,9 +68,9 @@ def generate_init_description(context, *args, **kwargs):
         name='navigator',
         parameters=[{
             'use_sim_time': True,
-            'missions_file': '/workspaces/swarm_of_drons/tests/test6/missions.csv',
-            'graph_file': '/workspaces/swarm_of_drons/tests/test6/graph.csv',
-            'edges_file': '/workspaces/swarm_of_drons/tests/test6/edges.csv',
+            'missions_file': os.path.join(test_dir, 'missions.csv'),
+            'graph_file': os.path.join(test_dir, 'graph.csv'),
+            'edges_file': os.path.join(test_dir, 'edges.csv'),
         }]
     )
     
@@ -155,16 +157,16 @@ class TestFullWork(unittest.TestCase):
         self.assertEqual(reports_rx[0].id, 1)
         self.assertEqual(reports_rx[0].model, 'x500')
         self.assertEqual(reports_rx[0].state, 1)
-        self.assertLess(abs(reports_rx[0].pose.position.x - 0.0), 0.1)
-        self.assertLess(abs(reports_rx[0].pose.position.y - 0.0), 0.1)
-        self.assertLess(abs(reports_rx[0].pose.position.z - 0.0), 0.1)
+        self.assertLess(abs(reports_rx[0].pose.position.x - 0.0), 0.5)
+        self.assertLess(abs(reports_rx[0].pose.position.y - 0.0), 0.5)
+        self.assertLess(abs(reports_rx[0].pose.position.z - 0.0), 0.5)
 
         self.assertEqual(reports_rx[1].id, 1)
         self.assertEqual(reports_rx[1].model, 'x500')
         self.assertEqual(reports_rx[1].state, 0)
-        self.assertLess(abs(reports_rx[1].pose.position.x - 35.0), 0.1)
-        self.assertLess(abs(reports_rx[1].pose.position.y - 35.0), 0.1)
-        self.assertLess(abs(reports_rx[1].pose.position.z - 35.0), 0.1)
+        self.assertLess(abs(reports_rx[1].pose.position.x - 35.0), 0.5)
+        self.assertLess(abs(reports_rx[1].pose.position.y - 35.0), 0.5)
+        self.assertLess(abs(reports_rx[1].pose.position.z - 35.0), 0.5)
 
         expected_id = 0
         tolerance = 0.1

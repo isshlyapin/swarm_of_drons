@@ -4,11 +4,10 @@
 #include <vector>
 #include <string>
 #include <future>
+#include <filesystem>
 
 #include <gtest/gtest.h>
 #include <rclcpp/rclcpp.hpp>
-// #include <rclcpp_components/component_manager.hpp>
-// #include <rclcpp/executors/single_threaded_executor.hpp>
 
 #include "drone_composition/drone.hpp"
 #include "drone_interfaces/msg/report.hpp"
@@ -17,6 +16,14 @@
 #include "drone_interfaces/msg/global_mission.hpp"
 
 using namespace std::chrono_literals;
+namespace fs = std::filesystem;
+
+/// Получить путь к тестовому файлу относительно текущего файла
+std::string get_test_file(const std::string &relative_path)
+{
+  fs::path test_dir = fs::path(__FILE__).parent_path() / "../../../tests/test5";
+  return (test_dir / relative_path).lexically_normal().string();
+}
 
 class DroneCompositionTest : public ::testing::Test {
 protected:
@@ -69,7 +76,7 @@ TEST_F(DroneCompositionTest, DroneTopicsAppear) {
 TEST_F(DroneCompositionTest, DroneControllerTopicsAppear) {
     auto controller = std::make_shared<DroneComposition::DroneController>(
         rclcpp::NodeOptions().arguments(
-            {"--ros-args", "-p", "drones_file:=/workspaces/swarm_of_drons/tests/test5/drones.csv"}
+            {"--ros-args", "-p", "drones_file:=" + get_test_file("drones.csv")}
         )
     );
 
@@ -106,7 +113,7 @@ TEST_F(DroneCompositionTest, DroneControllerTopicsAppear) {
 TEST_F(DroneCompositionTest, DroneControllerServicesAppear) {
     auto controller = std::make_shared<DroneComposition::DroneController>(
         rclcpp::NodeOptions().arguments(
-            {"--ros-args", "-p", "drones_file:=/workspaces/swarm_of_drons/tests/test5/drones.csv"}
+            {"--ros-args", "-p", "drones_file:=" + get_test_file("drones.csv")}
         )
     );
 
@@ -211,7 +218,7 @@ TEST_F(DroneCompositionTest, DroneControllerMissionExecution) {
 
     auto controller = std::make_shared<DroneComposition::DroneController>(
         rclcpp::NodeOptions().arguments(
-            {"--ros-args", "-p", "drones_file:=/workspaces/swarm_of_drons/tests/test5/drones.csv"}
+            {"--ros-args", "-p", "drones_file:=" + get_test_file("drones.csv")}
         )
     );
 

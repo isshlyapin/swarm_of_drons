@@ -125,28 +125,33 @@ void Drone::missionHandler(const MsgMissionPtrT msg) {
     sendReport(DroneState::FLY);
     sendLog(msg);
 
-    ssize_t start_index = 0;
     if (msg->poses.size() == msg->velocities.size() + 1) {
-        start_index = 1;
         Point startPoint{
             msg->poses[0].position.x, 
             msg->poses[0].position.y,
             msg->poses[0].position.z
         };
-        if ((startPoint - currentPosition).squaredNorm() < 1) {
+        if ((startPoint - currentPosition).squaredNorm() > 1) {
             RCLCPP_ERROR(get_logger(), "Drone %s: Start point is not current position", realName.c_str());
+            RCLCPP_ERROR(get_logger(), "Drone %s: current position: [%.2f, %.2f, %.2f]", 
+                realName.c_str(), currentPosition.x(), currentPosition.y(), currentPosition.z());
+            RCLCPP_ERROR(get_logger(), "Drone %s: start point: [%.2f, %.2f, %.2f]",
+                realName.c_str(), startPoint.x(), startPoint.y(), startPoint.z());
+
             sendReport(DroneState::ERROR);
             return;
         }
-    } else if (msg->poses.size() == msg->velocities.size()) {
-        start_index = 0;
-    } else {
+
+        msg->poses.erase(msg->poses.begin());
+    }
+    
+    if (msg->poses.size() != msg->velocities.size()) {
         RCLCPP_ERROR(get_logger(), "Drone %s: Invalid mission data", realName.c_str());
         sendReport(DroneState::ERROR);
         return;
     }
     
-    for (size_t i = start_index; i < msg->poses.size(); ++i) {
+    for (size_t i = 0; i < msg->poses.size(); ++i) {
         Point targetPoint{
             msg->poses[i].position.x, 
             msg->poses[i].position.y,

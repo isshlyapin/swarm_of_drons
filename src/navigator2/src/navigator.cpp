@@ -79,15 +79,15 @@ void Navigator::initCommunication()
 
 void Navigator::timerCallback()
 {
-    RCLCPP_INFO(get_logger(), "Timer callback triggered.");
+    RCLCPP_DEBUG(get_logger(), "Timer callback triggered.");
     if (mission_manager_.empty()) {
-        RCLCPP_INFO(get_logger(), "No missions available.");
+        RCLCPP_DEBUG(get_logger(), "No missions available.");
         return;
     }
 
     auto mission = mission_manager_.topInputMission();
     if (mission.time_appearance > this->now().seconds()) {
-        RCLCPP_INFO(get_logger(), "Waits opening mission");
+        RCLCPP_DEBUG(get_logger(), "Waits opening mission");
         return;
     }
 
@@ -99,7 +99,7 @@ void Navigator::timerCallback()
     request->pose_dronport.position.z = droneport_pose.z();
 
     while (!free_drone_client_->wait_for_service(std::chrono::seconds(1))) {
-        RCLCPP_INFO(this->get_logger(), "Wait for service interrupted");
+        RCLCPP_DEBUG(this->get_logger(), "Wait for service interrupted");
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
             return;

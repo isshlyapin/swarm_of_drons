@@ -81,32 +81,19 @@ install(TARGETS
 )
 
 if(BUILD_TESTING)
-    # ament_add_gtest(test_map
-    #     test/test1.cpp
-    # )
-    # target_link_libraries(test_map
-    #     navigator2_lib
-    # )
+    ament_add_gtest(test_map
+        test/test_map.cpp
+    )
+    target_link_libraries(test_map
+        navigator2_lib
+    )
 
-    # ament_add_gtest(test_interface
-    #     test/test_config_load.cpp    
-    # )
-    # target_link_libraries(test_interface
-    #     navigator2_lib
-    # )
-
-    # ament_add_gtest(test_end_to_end
-    #     test/test_end_to_end.cpp
-    # )
-    # ament_target_dependencies(test_end_to_end
-    #     rclcpp
-    #     drone_interfaces
-    #     drone_composition
-    #     navigator_interfaces
-    #     )
-    # target_link_libraries(test_end_to_end
-    #     navigator2_lib
-    # )
+    ament_add_gtest(test_interface
+        test/test_config_load.cpp    
+    )
+    target_link_libraries(test_interface
+        navigator2_lib
+    )
 
     # Integration tests
     find_package(ament_cmake_ros REQUIRED)
@@ -115,8 +102,8 @@ if(BUILD_TESTING)
         set(RUNNER "${ament_cmake_ros_DIR}/run_test_isolated.py")
         add_launch_test("${path}" RUNNER "${RUNNER}" ${ARGN})
     endfunction()
-    add_ros_isolated_launch_test(test/test_integration.py)
-    add_ros_isolated_launch_test(test/test_integration2.py)
+    add_ros_isolated_launch_test(test/test_execute_mission.py)
+    add_ros_isolated_launch_test(test/test_relocate_execute_mission.py)
 endif()
 
 ament_package()
