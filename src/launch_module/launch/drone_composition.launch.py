@@ -25,7 +25,7 @@ def generate_launch_description():
     drones_file_arg = DeclareLaunchArgument(
         'drones_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test1/drones.csv'
+            text='/workspaces/swarm_of_drones/tests/test1/drones.csv'
         ),
         description='Path to CSV file with drone parameters.'
     )
@@ -86,7 +86,7 @@ def create_nodes(context):
             raise RuntimeError(f"Invalid test_number: {test_number}. Must be a positive integer.") from e
 
         test_path = os.path.join(
-            '/workspaces/swarm_of_drons/tests',
+            '/workspaces/swarm_of_drones/tests',
             f'test{test_num_int}',
             'drones.csv'
         )

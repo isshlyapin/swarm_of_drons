@@ -37,11 +37,11 @@
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/isshlyapin/swarm_of_drons.git
+   git clone https://github.com/isshlyapin/swarm_of_drones.git
    ```
 2. Перейдите в директорию проекта:
    ```bash
-   cd swarm_of_drons
+   cd swarm_of_drones
    ```
 
 ## Использование

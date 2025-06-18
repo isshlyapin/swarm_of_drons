@@ -22,7 +22,7 @@ def generate_launch_description():
     drones_file_arg = DeclareLaunchArgument(
         'drones_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test1/drones.csv'
+            text='/workspaces/swarm_of_drones/tests/test1/drones.csv'
         ),
         description='Path to drone CSV file (used only if enable_test is false).'
     )
@@ -65,7 +65,7 @@ def launch_visualization(context, *args, **kwargs):
             raise RuntimeError(f"Invalid test_number '{test_number}': must be positive integer.") from e
 
         drones_file_path = os.path.join(
-            '/workspaces/swarm_of_drons/tests',
+            '/workspaces/swarm_of_drones/tests',
             f'test{test_num}',
             'drones.csv'
         )
