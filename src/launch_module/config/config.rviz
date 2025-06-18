@@ -92,10 +92,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /text_markers
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker1
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -103,7 +104,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_1/visual/marker
+        Value: /x500_1/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -133,10 +134,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_1/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker2
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -144,7 +146,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_2/visual/marker
+        Value: /x500_2/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -174,10 +176,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_2/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker3
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -185,7 +188,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_3/visual/marker
+        Value: /x500_3/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -215,10 +218,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_3/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker4
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -226,7 +230,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_4/visual/marker
+        Value: /x500_4/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -256,10 +260,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_4/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker6
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -267,7 +272,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_6/visual/marker
+        Value: /x500_6/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -297,10 +302,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_6/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker7
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -308,7 +314,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_7/visual/marker
+        Value: /x500_7/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -338,10 +344,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_7/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker8
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -349,7 +356,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_8/visual/marker
+        Value: /x500_8/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -379,10 +386,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_8/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker9
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -390,7 +398,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_9/visual/marker
+        Value: /x500_9/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -420,10 +428,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_9/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker10
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -431,7 +440,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_10/visual/marker
+        Value: /x500_10/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -461,10 +470,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_10/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker11
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -472,7 +482,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_11/visual/marker
+        Value: /x500_11/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -502,10 +512,11 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_11/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker12
       Namespaces:
+        drone_labels: true
         drones: true
       Topic:
         Depth: 5
@@ -513,7 +524,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_12/visual/marker
+        Value: /x500_12/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -543,18 +554,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_12/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker13
       Namespaces:
-        {}
+        drone_labels: true
+        drones: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_13/visual/marker
+        Value: /x500_13/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -584,18 +596,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_13/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker14
       Namespaces:
-        {}
+        drone_labels: true
+        drones: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_14/visual/marker
+        Value: /x500_14/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -625,18 +638,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /x500_14/visual/path
       Value: true
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Marker15
       Namespaces:
-        {}
+        drone_labels: true
+        drones: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /x500_15/visual/marker
+        Value: /x500_15/visual/markers
       Value: true
     - Alpha: 1
       Buffer Length: 1

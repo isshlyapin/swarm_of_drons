@@ -20,7 +20,7 @@ DroneVisual::DroneVisual(const std::string &drone_id)
     declare_parameter("time_scale", 1.0);
 
     communicationInit();
-    initMarker();
+    initMarkers();
 }
 
 void DroneVisual::communicationInit() {
@@ -45,7 +45,7 @@ void DroneVisual::communicationInit() {
         }
     );
 
-    markerPublisher = this->create_publisher<MsgMarkerT>(
+    markerArrayPublisher = this->create_publisher<MsgMarkerArrayT>(
         getMarkerTopic(),
         marker_qos
     );
@@ -56,23 +56,26 @@ void DroneVisual::communicationInit() {
     );
 }
 
-void DroneVisual::initMarker() {
-    marker.ns = "drones";
-    marker.id = std::stoi(drone_id.substr(drone_id.rfind('_') + 1));
-    marker.type = MsgMarkerT::SPHERE;
-    marker.action = MsgMarkerT::ADD;
-    marker.scale.x = 10.0;
-    marker.scale.y = 10.0;
-    marker.scale.z = 10.0;
-    marker.color.r = 1.0f;
-    marker.color.g = 0.0f;
-    marker.color.b = 0.0f;
-    marker.color.a = 1.0f;
-    marker.lifetime = rclcpp::Duration(0, 0);
+void DroneVisual::initMarkers() {
+    int drone_numeric_id = std::stoi(drone_id.substr(drone_id.rfind('_') + 1));
+    
+    // Инициализация сферы дрона
+    sphere_marker.ns = "drones";
+    sphere_marker.id = drone_numeric_id;
+    sphere_marker.type = MsgMarkerT::SPHERE;
+    sphere_marker.action = MsgMarkerT::ADD;
+    sphere_marker.scale.x = 10.0;
+    sphere_marker.scale.y = 10.0;
+    sphere_marker.scale.z = 10.0;
+    sphere_marker.color.r = 1.0f;
+    sphere_marker.color.g = 0.0f;
+    sphere_marker.color.b = 0.0f;
+    sphere_marker.color.a = 1.0f;
+    sphere_marker.lifetime = rclcpp::Duration(0, 0);
 
-    // Текстовая метка
-    text_marker.ns = "drones";
-    text_marker.id = marker.id + 1000; // уникальный id для текста
+    // Инициализация текстовой метки
+    text_marker.ns = "drone_labels";
+    text_marker.id = drone_numeric_id;
     text_marker.type = MsgMarkerT::TEXT_VIEW_FACING;
     text_marker.action = MsgMarkerT::ADD;
     text_marker.scale.z = 8.0;
@@ -82,19 +85,29 @@ void DroneVisual::initMarker() {
     text_marker.color.a = 1.0f;
     text_marker.lifetime = rclcpp::Duration(0, 0);
     text_marker.text = drone_id;
+
+    // Добавляем маркеры в массив
+    marker_array.markers.clear();
+    marker_array.markers.push_back(sphere_marker);
+    marker_array.markers.push_back(text_marker);
 }
 
-void DroneVisual::updateMarker(const MsgDroneOdometryPtrT msg) {
-    marker.header = msg->header;
-    marker.pose.position.x = msg->pose.pose.position.x;
-    marker.pose.position.y = msg->pose.pose.position.y;
-    marker.pose.position.z = msg->pose.pose.position.z;
+void DroneVisual::updateMarkers(const MsgDroneOdometryPtrT msg) {
+    // Обновляем сферу
+    sphere_marker.header = msg->header;
+    sphere_marker.pose.position.x = msg->pose.pose.position.x;
+    sphere_marker.pose.position.y = msg->pose.pose.position.y;
+    sphere_marker.pose.position.z = msg->pose.pose.position.z;
 
-    // Текстовая метка — выше сферы
+    // Обновляем текстовую метку (размещаем выше сферы)
     text_marker.header = msg->header;
     text_marker.pose.position.x = msg->pose.pose.position.x;
     text_marker.pose.position.y = msg->pose.pose.position.y;
-    text_marker.pose.position.z = msg->pose.pose.position.z - marker.scale.z * 1.2;
+    text_marker.pose.position.z = msg->pose.pose.position.z - sphere_marker.scale.z * 1.2;
+
+    // Обновляем массив маркеров
+    marker_array.markers[0] = sphere_marker;
+    marker_array.markers[1] = text_marker;
 }
 
 void DroneVisual::updatePath(const MsgDroneOdometryPtrT msg) {
@@ -106,24 +119,11 @@ void DroneVisual::updatePath(const MsgDroneOdometryPtrT msg) {
 }
 
 void DroneVisual::odometryHandler(const MsgDroneOdometryPtrT msg) {
-    static const int coeff = std::max(
-        1, 
-        static_cast<int>(
-            get_parameter("flight_rate").as_double() / 30 / 
-            get_parameter("time_scale").as_double()
-        )
-    );
-
-    static int count = 0;
-
-    if (count++ % coeff == 0) {
-        updateMarker(msg);
-        markerPublisher->publish(marker);
-        markerPublisher->publish(text_marker);
+        updateMarkers(msg);
+        markerArrayPublisher->publish(marker_array);
 
         updatePath(msg);
         pathPublisher->publish(path);
-    }
 }
 
 void DroneVisual::reportHandler(const MsgDroneReportPtrT msg) {
