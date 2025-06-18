@@ -23,7 +23,7 @@ def generate_launch_description():
     map_file_arg = DeclareLaunchArgument(
         'map_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test1/graph.csv'
+            text='/workspaces/swarm_of_drones/tests/test1/graph.csv'
         ),
         description='Path to map CSV file (used only if test mode is disabled).'
     )
@@ -49,7 +49,7 @@ def launch_map_node(context, *args, **kwargs):
             raise RuntimeError(f"Invalid test_number: {test_number}. Must be a positive integer.")
 
         map_file_path = os.path.join(
-            '/workspaces/swarm_of_drons/tests',
+            '/workspaces/swarm_of_drones/tests',
             f'test{test_num}',
             'graph.csv'
         )
