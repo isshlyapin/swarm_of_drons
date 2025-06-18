@@ -22,7 +22,7 @@ def generate_launch_description():
     missions_file_arg = DeclareLaunchArgument(
         'missions_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test1/missions.csv'
+            text='/workspaces/swarm_of_drones/tests/test1/missions.csv'
         ),
         description='Path to missions.csv (used only if enable_test is false)'
     )
@@ -30,7 +30,7 @@ def generate_launch_description():
     graph_file_arg = DeclareLaunchArgument(
         'graph_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test1/graph.csv'
+            text='/workspaces/swarm_of_drones/tests/test1/graph.csv'
         ),
         description='Path to graph.csv (used only if enable_test is false)'
     )
@@ -38,7 +38,7 @@ def generate_launch_description():
     edges_file_arg = DeclareLaunchArgument(
         'edges_file',
         default_value=TextSubstitution(
-            text='/workspaces/swarm_of_drons/tests/test1/edges.csv'
+            text='/workspaces/swarm_of_drones/tests/test1/edges.csv'
         ),
         description='Path to edges.csv (used only if enable_test is false)'
     )
@@ -76,17 +76,17 @@ def launch_controller_node(context, *args, **kwargs):
             raise RuntimeError(f"Invalid test_number: {test_number}. Must be a positive integer.")
 
         missions_file_path = os.path.join(
-            '/workspaces/swarm_of_drons/tests',
+            '/workspaces/swarm_of_drones/tests',
             f'test{test_num}',
             'missions.csv'
         )
         graph_file_path = os.path.join(
-            '/workspaces/swarm_of_drons/tests',
+            '/workspaces/swarm_of_drones/tests',
             f'test{test_num}',
             'graph.csv'
         )
         edges_file_path = os.path.join(
-            '/workspaces/swarm_of_drons/tests',
+            '/workspaces/swarm_of_drones/tests',
             f'test{test_num}',
             'edges.csv'
         )
